@@ -13,6 +13,38 @@ Repository Interfaces
 
 All implementation must be fully self-contained inside each Entity module.
 
+## 🧪 TDD Requirement (Test-Driven Development)
+
+All development MUST follow **Test-Driven Development (TDD)** principles.
+
+### 📌 Required Workflow:
+
+For every feature or change:
+
+1. Write tests FIRST (before implementation)
+2. Ensure tests describe business behavior clearly
+3. Implement only the minimum code required to pass tests
+4. Refactor while keeping all tests green
+
+### 🚫 Forbidden in TDD process:
+
+- Writing production code before tests
+- Skipping test definition
+- Writing tests after implementation
+- Writing overly technical tests (tests must reflect business behavior, not implementation details)
+
+### 🧠 Test Design Rules:
+
+Tests must:
+
+- Represent real business scenarios
+- Focus on behavior, not implementation
+- Validate domain rules and invariants
+- Cover edge cases and invalid states
+- Be readable like documentation
+
+---
+
 🚫 Strict Restrictions
 ❌ Never work outside Domain Layer
 
