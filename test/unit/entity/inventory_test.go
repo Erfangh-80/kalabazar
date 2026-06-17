@@ -8,8 +8,17 @@ import (
 	"kalabazar-stock-service/internal/domain/event"
 )
 
+func newInv(id, storeID, warehouseID, productID string, basePrice float64, instantQty int) *entity.Inventory {
+	inv, _ := entity.NewInventory(id, storeID, warehouseID, productID, basePrice, instantQty,
+		"retail", "new", 1, intPtr(100), nil)
+	return inv
+}
+
+func intPtr(i int) *int { return &i }
+
 func TestNewInventory_Success(t *testing.T) {
-	inv, err := entity.NewInventory("inv-1", "store-1", "wh-1", "prod-1", 150000, 10)
+	inv, err := entity.NewInventory("inv-1", "store-1", "wh-1", "prod-1", 150000, 10,
+		"retail", "new", 1, intPtr(100), nil)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -31,10 +40,23 @@ func TestNewInventory_Success(t *testing.T) {
 	if inv.InstantQty != 10 {
 		t.Errorf("expected 10, got %d", inv.InstantQty)
 	}
+	if inv.SaleModel != "retail" {
+		t.Errorf("expected retail, got %s", inv.SaleModel)
+	}
+	if inv.Condition != "new" {
+		t.Errorf("expected new, got %s", inv.Condition)
+	}
+	if inv.MinOrderQty != 1 {
+		t.Errorf("expected min 1, got %d", inv.MinOrderQty)
+	}
+	if inv.MaxOrderQty == nil || *inv.MaxOrderQty != 100 {
+		t.Errorf("expected max 100, got %v", inv.MaxOrderQty)
+	}
 }
 
 func TestNewInventory_Defaults(t *testing.T) {
-	inv, _ := entity.NewInventory("inv-1", "store-1", "wh-1", "prod-1", 100000, 0)
+	inv, _ := entity.NewInventory("inv-1", "store-1", "wh-1", "prod-1", 100000, 0,
+		"wholesale", "refurbished", 1, nil, nil)
 	if inv.VendorSaleStatus != entity.VendorSaleStatusActive {
 		t.Errorf("expected vendor status active, got %s", inv.VendorSaleStatus)
 	}
@@ -47,52 +69,102 @@ func TestNewInventory_Defaults(t *testing.T) {
 	if inv.FinalPrice != 100000 {
 		t.Errorf("expected FinalPrice to equal BasePrice, got %f", inv.FinalPrice)
 	}
+	if inv.Attributes == nil {
+		t.Error("expected non-nil Attributes")
+	}
 }
 
 func TestNewInventory_InvalidID(t *testing.T) {
-	_, err := entity.NewInventory("", "store-1", "wh-1", "prod-1", 100, 1)
+	_, err := entity.NewInventory("", "store-1", "wh-1", "prod-1", 100, 1,
+		"retail", "new", 1, nil, nil)
 	if err != entity.ErrInventoryInvalidID {
 		t.Errorf("expected ErrInventoryInvalidID, got %v", err)
 	}
 }
 
 func TestNewInventory_InvalidStoreID(t *testing.T) {
-	_, err := entity.NewInventory("inv-1", "", "wh-1", "prod-1", 100, 1)
+	_, err := entity.NewInventory("inv-1", "", "wh-1", "prod-1", 100, 1,
+		"retail", "new", 1, nil, nil)
 	if err != entity.ErrInventoryInvalidStoreID {
 		t.Errorf("expected ErrInventoryInvalidStoreID, got %v", err)
 	}
 }
 
 func TestNewInventory_InvalidWarehouseID(t *testing.T) {
-	_, err := entity.NewInventory("inv-1", "store-1", "", "prod-1", 100, 1)
+	_, err := entity.NewInventory("inv-1", "store-1", "", "prod-1", 100, 1,
+		"retail", "new", 1, nil, nil)
 	if err != entity.ErrInventoryInvalidWarehouseID {
 		t.Errorf("expected ErrInventoryInvalidWarehouseID, got %v", err)
 	}
 }
 
 func TestNewInventory_InvalidProductID(t *testing.T) {
-	_, err := entity.NewInventory("inv-1", "store-1", "wh-1", "", 100, 1)
+	_, err := entity.NewInventory("inv-1", "store-1", "wh-1", "", 100, 1,
+		"retail", "new", 1, nil, nil)
 	if err != entity.ErrInventoryInvalidProductID {
 		t.Errorf("expected ErrInventoryInvalidProductID, got %v", err)
 	}
 }
 
 func TestNewInventory_InvalidBasePrice(t *testing.T) {
-	_, err := entity.NewInventory("inv-1", "store-1", "wh-1", "prod-1", 0, 1)
+	_, err := entity.NewInventory("inv-1", "store-1", "wh-1", "prod-1", 0, 1,
+		"retail", "new", 1, nil, nil)
 	if err != entity.ErrInventoryInvalidBasePrice {
 		t.Errorf("expected ErrInventoryInvalidBasePrice, got %v", err)
 	}
 }
 
 func TestNewInventory_InvalidStock(t *testing.T) {
-	_, err := entity.NewInventory("inv-1", "store-1", "wh-1", "prod-1", 100, -5)
+	_, err := entity.NewInventory("inv-1", "store-1", "wh-1", "prod-1", 100, -5,
+		"retail", "new", 1, nil, nil)
 	if err != entity.ErrInventoryInvalidStock {
 		t.Errorf("expected ErrInventoryInvalidStock, got %v", err)
 	}
 }
 
+func TestNewInventory_InvalidSaleModel(t *testing.T) {
+	_, err := entity.NewInventory("inv-1", "store-1", "wh-1", "prod-1", 100, 5,
+		"", "new", 1, nil, nil)
+	if err != entity.ErrInventoryInvalidSaleModel {
+		t.Errorf("expected ErrInventoryInvalidSaleModel, got %v", err)
+	}
+}
+
+func TestNewInventory_InvalidCondition(t *testing.T) {
+	_, err := entity.NewInventory("inv-1", "store-1", "wh-1", "prod-1", 100, 5,
+		"retail", "", 1, nil, nil)
+	if err != entity.ErrInventoryInvalidCondition {
+		t.Errorf("expected ErrInventoryInvalidCondition, got %v", err)
+	}
+}
+
+func TestNewInventory_InvalidMinOrderQty(t *testing.T) {
+	_, err := entity.NewInventory("inv-1", "store-1", "wh-1", "prod-1", 100, 5,
+		"retail", "new", 0, nil, nil)
+	if err != entity.ErrInventoryInvalidMinOrderQty {
+		t.Errorf("expected ErrInventoryInvalidMinOrderQty, got %v", err)
+	}
+}
+
+func TestNewInventory_InvalidMaxOrderQty(t *testing.T) {
+	_, err := entity.NewInventory("inv-1", "store-1", "wh-1", "prod-1", 100, 5,
+		"retail", "new", 1, intPtr(0), nil)
+	if err != entity.ErrInventoryInvalidMaxOrderQty {
+		t.Errorf("expected ErrInventoryInvalidMaxOrderQty, got %v", err)
+	}
+}
+
+func TestNewInventory_MaxLessThanMin(t *testing.T) {
+	_, err := entity.NewInventory("inv-1", "store-1", "wh-1", "prod-1", 100, 5,
+		"retail", "new", 5, intPtr(3), nil)
+	if err != entity.ErrInventoryInvalidMaxOrderQty {
+		t.Errorf("expected ErrInventoryInvalidMaxOrderQty, got %v", err)
+	}
+}
+
 func TestNewInventory_EventEmitted(t *testing.T) {
-	inv, err := entity.NewInventory("inv-1", "store-1", "wh-1", "prod-1", 100, 1)
+	inv, err := entity.NewInventory("inv-1", "store-1", "wh-1", "prod-1", 100, 1,
+		"retail", "new", 1, nil, nil)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -106,7 +178,7 @@ func TestNewInventory_EventEmitted(t *testing.T) {
 }
 
 func TestInventory_UpdateStock_Success(t *testing.T) {
-	inv, _ := entity.NewInventory("inv-1", "store-1", "wh-1", "prod-1", 100, 10)
+	inv := newInv("inv-1", "store-1", "wh-1", "prod-1", 100, 10)
 	inv.Events()
 
 	err := inv.UpdateStock(25)
@@ -126,7 +198,7 @@ func TestInventory_UpdateStock_Success(t *testing.T) {
 }
 
 func TestInventory_UpdateStock_ToZero(t *testing.T) {
-	inv, _ := entity.NewInventory("inv-1", "store-1", "wh-1", "prod-1", 100, 10)
+	inv := newInv("inv-1", "store-1", "wh-1", "prod-1", 100, 10)
 	inv.Events()
 
 	err := inv.UpdateStock(0)
@@ -139,7 +211,7 @@ func TestInventory_UpdateStock_ToZero(t *testing.T) {
 }
 
 func TestInventory_UpdateStock_Negative(t *testing.T) {
-	inv, _ := entity.NewInventory("inv-1", "store-1", "wh-1", "prod-1", 100, 10)
+	inv := newInv("inv-1", "store-1", "wh-1", "prod-1", 100, 10)
 	err := inv.UpdateStock(-1)
 	if err != entity.ErrInventoryInvalidStock {
 		t.Errorf("expected ErrInventoryInvalidStock, got %v", err)
@@ -147,14 +219,14 @@ func TestInventory_UpdateStock_Negative(t *testing.T) {
 }
 
 func TestInventory_CanBeSold_AllConditionsMet(t *testing.T) {
-	inv, _ := entity.NewInventory("inv-1", "store-1", "wh-1", "prod-1", 100, 5)
+	inv := newInv("inv-1", "store-1", "wh-1", "prod-1", 100, 5)
 	if !inv.CanBeSold() {
 		t.Error("expected CanBeSold to be true")
 	}
 }
 
 func TestInventory_CanBeSold_VendorInactive(t *testing.T) {
-	inv, _ := entity.NewInventory("inv-1", "store-1", "wh-1", "prod-1", 100, 5)
+	inv := newInv("inv-1", "store-1", "wh-1", "prod-1", 100, 5)
 	inv.SetVendorStatus(entity.VendorSaleStatusInactive)
 	if inv.CanBeSold() {
 		t.Error("expected CanBeSold to be false when vendor inactive")
@@ -162,7 +234,7 @@ func TestInventory_CanBeSold_VendorInactive(t *testing.T) {
 }
 
 func TestInventory_CanBeSold_SystemInactive(t *testing.T) {
-	inv, _ := entity.NewInventory("inv-1", "store-1", "wh-1", "prod-1", 100, 5)
+	inv := newInv("inv-1", "store-1", "wh-1", "prod-1", 100, 5)
 	inv.SetSystemStatus(entity.SystemSaleStatusInactive)
 	if inv.CanBeSold() {
 		t.Error("expected CanBeSold to be false when system inactive")
@@ -170,14 +242,14 @@ func TestInventory_CanBeSold_SystemInactive(t *testing.T) {
 }
 
 func TestInventory_CanBeSold_ZeroStock(t *testing.T) {
-	inv, _ := entity.NewInventory("inv-1", "store-1", "wh-1", "prod-1", 100, 0)
+	inv := newInv("inv-1", "store-1", "wh-1", "prod-1", 100, 0)
 	if inv.CanBeSold() {
 		t.Error("expected CanBeSold to be false when stock is zero")
 	}
 }
 
 func TestInventory_CanBeSold_DraftStatus(t *testing.T) {
-	inv, _ := entity.NewInventory("inv-1", "store-1", "wh-1", "prod-1", 100, 5)
+	inv := newInv("inv-1", "store-1", "wh-1", "prod-1", 100, 5)
 	inv.SetVendorStatus(entity.VendorSaleStatusDraft)
 	if inv.CanBeSold() {
 		t.Error("expected CanBeSold to be false when vendor status is draft")
@@ -185,7 +257,7 @@ func TestInventory_CanBeSold_DraftStatus(t *testing.T) {
 }
 
 func TestInventory_CanBeSold_ScheduledStatus(t *testing.T) {
-	inv, _ := entity.NewInventory("inv-1", "store-1", "wh-1", "prod-1", 100, 5)
+	inv := newInv("inv-1", "store-1", "wh-1", "prod-1", 100, 5)
 	inv.SetVendorStatus(entity.VendorSaleStatusScheduled)
 	if inv.CanBeSold() {
 		t.Error("expected CanBeSold to be false when vendor status is scheduled")
@@ -193,7 +265,7 @@ func TestInventory_CanBeSold_ScheduledStatus(t *testing.T) {
 }
 
 func TestInventory_SetVendorStatus_Activate(t *testing.T) {
-	inv, _ := entity.NewInventory("inv-1", "store-1", "wh-1", "prod-1", 100, 5)
+	inv := newInv("inv-1", "store-1", "wh-1", "prod-1", 100, 5)
 	inv.SetVendorStatus(entity.VendorSaleStatusInactive)
 	inv.Events()
 
@@ -214,7 +286,7 @@ func TestInventory_SetVendorStatus_Activate(t *testing.T) {
 }
 
 func TestInventory_SetVendorStatus_Deactivate(t *testing.T) {
-	inv, _ := entity.NewInventory("inv-1", "store-1", "wh-1", "prod-1", 100, 5)
+	inv := newInv("inv-1", "store-1", "wh-1", "prod-1", 100, 5)
 	inv.Events()
 
 	err := inv.SetVendorStatus(entity.VendorSaleStatusInactive)
@@ -234,7 +306,7 @@ func TestInventory_SetVendorStatus_Deactivate(t *testing.T) {
 }
 
 func TestInventory_SetVendorStatus_Scheduled(t *testing.T) {
-	inv, _ := entity.NewInventory("inv-1", "store-1", "wh-1", "prod-1", 100, 5)
+	inv := newInv("inv-1", "store-1", "wh-1", "prod-1", 100, 5)
 	inv.Events()
 
 	err := inv.SetVendorStatus(entity.VendorSaleStatusScheduled)
@@ -247,7 +319,7 @@ func TestInventory_SetVendorStatus_Scheduled(t *testing.T) {
 }
 
 func TestInventory_SetVendorStatus_Draft(t *testing.T) {
-	inv, _ := entity.NewInventory("inv-1", "store-1", "wh-1", "prod-1", 100, 5)
+	inv := newInv("inv-1", "store-1", "wh-1", "prod-1", 100, 5)
 	inv.Events()
 
 	err := inv.SetVendorStatus(entity.VendorSaleStatusDraft)
@@ -260,7 +332,7 @@ func TestInventory_SetVendorStatus_Draft(t *testing.T) {
 }
 
 func TestInventory_SetVendorStatus_SameStatus(t *testing.T) {
-	inv, _ := entity.NewInventory("inv-1", "store-1", "wh-1", "prod-1", 100, 5)
+	inv := newInv("inv-1", "store-1", "wh-1", "prod-1", 100, 5)
 	inv.Events()
 
 	err := inv.SetVendorStatus(entity.VendorSaleStatusActive)
@@ -274,7 +346,7 @@ func TestInventory_SetVendorStatus_SameStatus(t *testing.T) {
 }
 
 func TestInventory_SetVendorStatus_Invalid(t *testing.T) {
-	inv, _ := entity.NewInventory("inv-1", "store-1", "wh-1", "prod-1", 100, 5)
+	inv := newInv("inv-1", "store-1", "wh-1", "prod-1", 100, 5)
 	err := inv.SetVendorStatus("invalid")
 	if err != entity.ErrInventoryInvalidVendorStatus {
 		t.Errorf("expected ErrInventoryInvalidVendorStatus, got %v", err)
@@ -282,7 +354,7 @@ func TestInventory_SetVendorStatus_Invalid(t *testing.T) {
 }
 
 func TestInventory_SetSystemStatus_Unblocked(t *testing.T) {
-	inv, _ := entity.NewInventory("inv-1", "store-1", "wh-1", "prod-1", 100, 5)
+	inv := newInv("inv-1", "store-1", "wh-1", "prod-1", 100, 5)
 	inv.SetSystemStatus(entity.SystemSaleStatusInactive)
 	inv.Events()
 
@@ -303,7 +375,7 @@ func TestInventory_SetSystemStatus_Unblocked(t *testing.T) {
 }
 
 func TestInventory_SetSystemStatus_Blocked(t *testing.T) {
-	inv, _ := entity.NewInventory("inv-1", "store-1", "wh-1", "prod-1", 100, 5)
+	inv := newInv("inv-1", "store-1", "wh-1", "prod-1", 100, 5)
 	inv.Events()
 
 	err := inv.SetSystemStatus(entity.SystemSaleStatusInactive)
@@ -323,7 +395,7 @@ func TestInventory_SetSystemStatus_Blocked(t *testing.T) {
 }
 
 func TestInventory_SetSystemStatus_SameStatus(t *testing.T) {
-	inv, _ := entity.NewInventory("inv-1", "store-1", "wh-1", "prod-1", 100, 5)
+	inv := newInv("inv-1", "store-1", "wh-1", "prod-1", 100, 5)
 	inv.Events()
 
 	err := inv.SetSystemStatus(entity.SystemSaleStatusActive)
@@ -337,7 +409,7 @@ func TestInventory_SetSystemStatus_SameStatus(t *testing.T) {
 }
 
 func TestInventory_SetSystemStatus_Invalid(t *testing.T) {
-	inv, _ := entity.NewInventory("inv-1", "store-1", "wh-1", "prod-1", 100, 5)
+	inv := newInv("inv-1", "store-1", "wh-1", "prod-1", 100, 5)
 	err := inv.SetSystemStatus("invalid")
 	if err != entity.ErrInventoryInvalidSystemStatus {
 		t.Errorf("expected ErrInventoryInvalidSystemStatus, got %v", err)
@@ -348,7 +420,7 @@ func TestInventory_SetSaleSchedule_Full(t *testing.T) {
 	now := time.Now()
 	start := now.Add(24 * time.Hour)
 	end := now.Add(72 * time.Hour)
-	inv, _ := entity.NewInventory("inv-1", "store-1", "wh-1", "prod-1", 100, 5)
+	inv := newInv("inv-1", "store-1", "wh-1", "prod-1", 100, 5)
 	inv.Events()
 
 	err := inv.SetSaleSchedule(&start, &end)
@@ -373,7 +445,7 @@ func TestInventory_SetSaleSchedule_Full(t *testing.T) {
 func TestInventory_SetSaleSchedule_StartOnly(t *testing.T) {
 	now := time.Now()
 	start := now.Add(24 * time.Hour)
-	inv, _ := entity.NewInventory("inv-1", "store-1", "wh-1", "prod-1", 100, 5)
+	inv := newInv("inv-1", "store-1", "wh-1", "prod-1", 100, 5)
 	inv.Events()
 
 	err := inv.SetSaleSchedule(&start, nil)
@@ -392,7 +464,7 @@ func TestInventory_SetSaleSchedule_EndBeforeStart(t *testing.T) {
 	now := time.Now()
 	start := now.Add(72 * time.Hour)
 	end := now.Add(24 * time.Hour)
-	inv, _ := entity.NewInventory("inv-1", "store-1", "wh-1", "prod-1", 100, 5)
+	inv := newInv("inv-1", "store-1", "wh-1", "prod-1", 100, 5)
 
 	err := inv.SetSaleSchedule(&start, &end)
 	if err != entity.ErrInventoryInvalidTimeRange {
@@ -403,7 +475,7 @@ func TestInventory_SetSaleSchedule_EndBeforeStart(t *testing.T) {
 func TestInventory_SetSaleSchedule_NilStartWithEnd(t *testing.T) {
 	now := time.Now()
 	end := now.Add(24 * time.Hour)
-	inv, _ := entity.NewInventory("inv-1", "store-1", "wh-1", "prod-1", 100, 5)
+	inv := newInv("inv-1", "store-1", "wh-1", "prod-1", 100, 5)
 
 	err := inv.SetSaleSchedule(nil, &end)
 	if err != entity.ErrInventoryInvalidTimeRange {
@@ -412,7 +484,7 @@ func TestInventory_SetSaleSchedule_NilStartWithEnd(t *testing.T) {
 }
 
 func TestInventory_UpdatePrice_Success(t *testing.T) {
-	inv, _ := entity.NewInventory("inv-1", "store-1", "wh-1", "prod-1", 100, 5)
+	inv := newInv("inv-1", "store-1", "wh-1", "prod-1", 100, 5)
 	inv.Events()
 
 	err := inv.UpdatePrice(200, 180)
@@ -435,7 +507,7 @@ func TestInventory_UpdatePrice_Success(t *testing.T) {
 }
 
 func TestInventory_UpdatePrice_InvalidBasePrice(t *testing.T) {
-	inv, _ := entity.NewInventory("inv-1", "store-1", "wh-1", "prod-1", 100, 5)
+	inv := newInv("inv-1", "store-1", "wh-1", "prod-1", 100, 5)
 	err := inv.UpdatePrice(0, 0)
 	if err != entity.ErrInventoryInvalidBasePrice {
 		t.Errorf("expected ErrInventoryInvalidBasePrice, got %v", err)
@@ -443,7 +515,7 @@ func TestInventory_UpdatePrice_InvalidBasePrice(t *testing.T) {
 }
 
 func TestInventory_UpdatePrice_NegativeFinalPrice(t *testing.T) {
-	inv, _ := entity.NewInventory("inv-1", "store-1", "wh-1", "prod-1", 100, 5)
+	inv := newInv("inv-1", "store-1", "wh-1", "prod-1", 100, 5)
 	err := inv.UpdatePrice(100, -10)
 	if err != entity.ErrInventoryInvalidPrice {
 		t.Errorf("expected ErrInventoryInvalidPrice, got %v", err)
@@ -451,7 +523,7 @@ func TestInventory_UpdatePrice_NegativeFinalPrice(t *testing.T) {
 }
 
 func TestInventory_Events_ClearedAfterCall(t *testing.T) {
-	inv, _ := entity.NewInventory("inv-1", "store-1", "wh-1", "prod-1", 100, 5)
+	inv := newInv("inv-1", "store-1", "wh-1", "prod-1", 100, 5)
 	events1 := inv.Events()
 	if len(events1) != 1 {
 		t.Fatalf("expected 1 event, got %d", len(events1))
@@ -459,5 +531,45 @@ func TestInventory_Events_ClearedAfterCall(t *testing.T) {
 	events2 := inv.Events()
 	if len(events2) != 0 {
 		t.Errorf("expected 0 events after clear, got %d", len(events2))
+	}
+}
+
+func TestInventory_ValidatePurchase_BelowMin(t *testing.T) {
+	inv, _ := entity.NewInventory("inv-1", "store-1", "wh-1", "prod-1", 100, 5,
+		"retail", "new", 2, intPtr(10), nil)
+	if err := inv.ValidatePurchase(1); err != entity.ErrInventoryBelowMinOrder {
+		t.Errorf("expected ErrInventoryBelowMinOrder, got %v", err)
+	}
+}
+
+func TestInventory_ValidatePurchase_AboveMax(t *testing.T) {
+	inv, _ := entity.NewInventory("inv-1", "store-1", "wh-1", "prod-1", 100, 5,
+		"retail", "new", 1, intPtr(5), nil)
+	if err := inv.ValidatePurchase(10); err != entity.ErrInventoryAboveMaxOrder {
+		t.Errorf("expected ErrInventoryAboveMaxOrder, got %v", err)
+	}
+}
+
+func TestInventory_ValidatePurchase_InsufficientStock(t *testing.T) {
+	inv, _ := entity.NewInventory("inv-1", "store-1", "wh-1", "prod-1", 100, 5,
+		"retail", "new", 1, intPtr(10), nil)
+	if err := inv.ValidatePurchase(6); err != entity.ErrInventoryInsufficientStock {
+		t.Errorf("expected ErrInventoryInsufficientStock, got %v", err)
+	}
+}
+
+func TestInventory_ValidatePurchase_Success(t *testing.T) {
+	inv, _ := entity.NewInventory("inv-1", "store-1", "wh-1", "prod-1", 100, 5,
+		"retail", "new", 1, intPtr(10), nil)
+	if err := inv.ValidatePurchase(3); err != nil {
+		t.Errorf("expected no error, got %v", err)
+	}
+}
+
+func TestInventory_ValidatePurchase_NoMaxLimit(t *testing.T) {
+	inv, _ := entity.NewInventory("inv-1", "store-1", "wh-1", "prod-1", 100, 200,
+		"retail", "new", 1, nil, nil)
+	if err := inv.ValidatePurchase(100); err != nil {
+		t.Errorf("expected no error when no max limit, got %v", err)
 	}
 }
