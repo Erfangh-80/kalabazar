@@ -30,29 +30,6 @@ const (
 	WarehouseStatusInactive WarehouseStatus = "inactive"
 )
 
-// Address represents a physical location.
-type Address struct {
-	Street     string
-	City       string
-	State      string
-	PostalCode string
-	Country    string
-}
-
-// Validate checks that the address represents a real physical location.
-func (a Address) Validate() error {
-	if a.Street == "" {
-		return errors.New("street cannot be empty")
-	}
-	if a.City == "" {
-		return errors.New("city cannot be empty")
-	}
-	if a.Country == "" {
-		return errors.New("country cannot be empty")
-	}
-	return nil
-}
-
 // Warehouse represents a physical storage location owned by a seller.
 type Warehouse struct {
 	ID           string

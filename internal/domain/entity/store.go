@@ -32,7 +32,7 @@ type Store struct {
 	UserID                 string
 	StoreName              string
 	ContactPhone           *string
-	AddressID              *string
+	Address                *Address
 	MediaAssets            []string
 	Status                 StoreStatus
 	IsCommissionApplicable bool
@@ -44,7 +44,7 @@ type Store struct {
 }
 
 // NewStore creates a new Store with active status and default values.
-func NewStore(id, userID, storeName string, contactPhone, addressID *string, mediaAssets []string) (*Store, error) {
+func NewStore(id, userID, storeName string, contactPhone *string, address *Address, mediaAssets []string) (*Store, error) {
 	if id == "" {
 		return nil, ErrStoreInvalidID
 	}
@@ -57,6 +57,11 @@ func NewStore(id, userID, storeName string, contactPhone, addressID *string, med
 	if utf8.RuneCountInString(storeName) > 255 {
 		return nil, ErrStoreNameTooLong
 	}
+	if address != nil {
+		if err := address.Validate(); err != nil {
+			return nil, err
+		}
+	}
 
 	now := time.Now()
 	store := &Store{
@@ -64,7 +69,7 @@ func NewStore(id, userID, storeName string, contactPhone, addressID *string, med
 		UserID:                 userID,
 		StoreName:              storeName,
 		ContactPhone:           contactPhone,
-		AddressID:              addressID,
+		Address:                address,
 		MediaAssets:            mediaAssets,
 		Status:                 StoreStatusActive,
 		IsCommissionApplicable: true,
@@ -82,17 +87,22 @@ func NewStore(id, userID, storeName string, contactPhone, addressID *string, med
 }
 
 // UpdateInfo updates the store's mutable information fields.
-func (s *Store) UpdateInfo(storeName string, contactPhone, addressID *string, mediaAssets []string) error {
+func (s *Store) UpdateInfo(storeName string, contactPhone *string, address *Address, mediaAssets []string) error {
 	if storeName == "" {
 		return ErrStoreInvalidName
 	}
 	if utf8.RuneCountInString(storeName) > 255 {
 		return ErrStoreNameTooLong
 	}
+	if address != nil {
+		if err := address.Validate(); err != nil {
+			return err
+		}
+	}
 
 	s.StoreName = storeName
 	s.ContactPhone = contactPhone
-	s.AddressID = addressID
+	s.Address = address
 	s.MediaAssets = mediaAssets
 	s.UpdatedAt = time.Now()
 	s.events = append(s.events, event.StoreUpdated{
