@@ -8,17 +8,18 @@ import (
 )
 
 var (
-	ErrPromotionInvalidID          = errors.New("promotion id cannot be empty")
-	ErrPromotionInvalidTitle       = errors.New("promotion title cannot be empty")
-	ErrPromotionInvalidTimeRange   = errors.New("start time must be before end time")
-	ErrPromotionAlreadyApproved    = errors.New("promotion is already approved")
-	ErrPromotionAlreadyRejected    = errors.New("promotion is already rejected")
-	ErrPromotionApprovalNotRequired = errors.New("promotion does not require approval")
-	ErrPromotionNotApproved        = errors.New("promotion is not approved")
-	ErrPromotionInvalidProductID   = errors.New("product id cannot be empty")
-	ErrPromotionAlreadyActive      = errors.New("promotion is already active")
-	ErrPromotionAlreadyInactive    = errors.New("promotion is already inactive")
-	ErrPromotionNotFound           = errors.New("promotion not found")
+	ErrPromotionInvalidID            = errors.New("promotion id cannot be empty")
+	ErrPromotionInvalidTitle         = errors.New("promotion title cannot be empty")
+	ErrPromotionInvalidTimeRange     = errors.New("start time must be before end time")
+	ErrPromotionAlreadyApproved      = errors.New("promotion is already approved")
+	ErrPromotionAlreadyRejected      = errors.New("promotion is already rejected")
+	ErrPromotionApprovalNotRequired  = errors.New("promotion does not require approval")
+	ErrPromotionNotApproved          = errors.New("promotion is not approved")
+	ErrPromotionInvalidProductID     = errors.New("product id cannot be empty")
+	ErrPromotionAlreadyActive        = errors.New("promotion is already active")
+	ErrPromotionAlreadyInactive      = errors.New("promotion is already inactive")
+	ErrPromotionNotFound             = errors.New("promotion not found")
+	ErrPromotionInvalidDiscountPct   = errors.New("discount percent must be between 0 and 100")
 )
 
 // ApprovalStatus represents the approval state of a promotion campaign.
@@ -33,24 +34,26 @@ const (
 
 // Promotion represents a discount campaign with a time frame and optional approval.
 type Promotion struct {
-	ID                   string
-	Title                string
-	Description          string
-	StartAt              time.Time
-	EndAt                time.Time
-	RequiresApproval     bool
-	ApprovalStatus       ApprovalStatus
-	IsActive             bool
+	ID                     string
+	Title                  string
+	Description            string
+	StartAt                time.Time
+	EndAt                  time.Time
+	RequiresApproval       bool
+	ApprovalStatus         ApprovalStatus
+	IsActive               bool
+	IsCountdown            bool
+	DiscountPercent        float64
 	ExpireSaleWithPromotion bool
-	LinkedProductIDs     []string
-	CreatedAt            time.Time
-	UpdatedAt            time.Time
+	LinkedProductIDs       []string
+	CreatedAt              time.Time
+	UpdatedAt              time.Time
 
 	events []any
 }
 
 // NewPromotion creates a new Promotion campaign.
-func NewPromotion(id, title, description string, startAt, endAt time.Time, requiresApproval bool) (*Promotion, error) {
+func NewPromotion(id, title, description string, startAt, endAt time.Time, requiresApproval bool, discountPercent float64, isCountdown bool) (*Promotion, error) {
 	if id == "" {
 		return nil, ErrPromotionInvalidID
 	}
@@ -59,6 +62,9 @@ func NewPromotion(id, title, description string, startAt, endAt time.Time, requi
 	}
 	if !startAt.Before(endAt) {
 		return nil, ErrPromotionInvalidTimeRange
+	}
+	if discountPercent < 0 || discountPercent > 100 {
+		return nil, ErrPromotionInvalidDiscountPct
 	}
 
 	approvalStatus := PromotionApprovalNone
@@ -76,6 +82,8 @@ func NewPromotion(id, title, description string, startAt, endAt time.Time, requi
 		RequiresApproval: requiresApproval,
 		ApprovalStatus:   approvalStatus,
 		IsActive:         false,
+		IsCountdown:      isCountdown,
+		DiscountPercent:  discountPercent,
 		CreatedAt:        now,
 		UpdatedAt:        now,
 	}

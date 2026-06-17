@@ -22,6 +22,13 @@ var (
 	ErrInventoryAlreadyLinkedToPromotion = errors.New("inventory already linked to a promotion")
 	ErrInventoryInvalidPromotionID    = errors.New("promotion id cannot be empty")
 	ErrInventoryInvalidPromotionStatus = errors.New("invalid promotion status")
+	ErrInventoryInvalidSaleModel      = errors.New("sale model cannot be empty")
+	ErrInventoryInvalidCondition      = errors.New("condition cannot be empty")
+	ErrInventoryInvalidMinOrderQty    = errors.New("minimum order quantity must be greater than zero")
+	ErrInventoryInvalidMaxOrderQty    = errors.New("maximum order quantity must be greater than zero")
+	ErrInventoryBelowMinOrder         = errors.New("quantity is below minimum order quantity")
+	ErrInventoryAboveMaxOrder         = errors.New("quantity exceeds maximum order quantity")
+	ErrInventoryInsufficientStock     = errors.New("insufficient stock")
 )
 
 // VendorSaleStatus represents the sale status controlled by the seller.
@@ -72,12 +79,17 @@ type Inventory struct {
 	WarehouseID           string
 	ProductID             string
 	PromotionID           *string
+	SaleModel             string
+	Condition             string
 	VendorSaleStatus      VendorSaleStatus
 	SystemSaleStatus      SystemSaleStatus
 	CampaignApprovalStatus CampaignApprovalStatus
 	InstantQty            int
+	MinOrderQty           int
+	MaxOrderQty           *int
 	BasePrice             float64
 	FinalPrice            float64
+	Attributes            map[string]string
 	StartAt               *time.Time
 	EndAt                 *time.Time
 	CreatedAt             time.Time
@@ -87,7 +99,8 @@ type Inventory struct {
 }
 
 // NewInventory creates a new Inventory item with default statuses.
-func NewInventory(id, storeID, warehouseID, productID string, basePrice float64, instantQty int) (*Inventory, error) {
+func NewInventory(id, storeID, warehouseID, productID string, basePrice float64, instantQty int,
+	saleModel, condition string, minOrderQty int, maxOrderQty *int, attributes map[string]string) (*Inventory, error) {
 	if id == "" {
 		return nil, ErrInventoryInvalidID
 	}
@@ -106,6 +119,25 @@ func NewInventory(id, storeID, warehouseID, productID string, basePrice float64,
 	if instantQty < 0 {
 		return nil, ErrInventoryInvalidStock
 	}
+	if saleModel == "" {
+		return nil, ErrInventoryInvalidSaleModel
+	}
+	if condition == "" {
+		return nil, ErrInventoryInvalidCondition
+	}
+	if minOrderQty <= 0 {
+		return nil, ErrInventoryInvalidMinOrderQty
+	}
+	if maxOrderQty != nil && *maxOrderQty <= 0 {
+		return nil, ErrInventoryInvalidMaxOrderQty
+	}
+	if maxOrderQty != nil && *maxOrderQty < minOrderQty {
+		return nil, ErrInventoryInvalidMaxOrderQty
+	}
+
+	if attributes == nil {
+		attributes = make(map[string]string)
+	}
 
 	now := time.Now()
 	inv := &Inventory{
@@ -113,6 +145,11 @@ func NewInventory(id, storeID, warehouseID, productID string, basePrice float64,
 		StoreID:               storeID,
 		WarehouseID:           warehouseID,
 		ProductID:             productID,
+		SaleModel:             saleModel,
+		Condition:             condition,
+		MinOrderQty:           minOrderQty,
+		MaxOrderQty:           maxOrderQty,
+		Attributes:            attributes,
 		VendorSaleStatus:      VendorSaleStatusActive,
 		SystemSaleStatus:      SystemSaleStatusActive,
 		CampaignApprovalStatus: CampaignApprovalPending,
@@ -246,6 +283,21 @@ func (inv *Inventory) CanBeSold() bool {
 	return inv.VendorSaleStatus == VendorSaleStatusActive &&
 		inv.SystemSaleStatus == SystemSaleStatusActive &&
 		inv.InstantQty > 0
+}
+
+// ValidatePurchase checks whether the given quantity can be purchased.
+// Returns ErrInventoryBelowMinOrder, ErrInventoryAboveMaxOrder, or ErrInventoryInsufficientStock.
+func (inv *Inventory) ValidatePurchase(qty int) error {
+	if qty < inv.MinOrderQty {
+		return ErrInventoryBelowMinOrder
+	}
+	if inv.MaxOrderQty != nil && qty > *inv.MaxOrderQty {
+		return ErrInventoryAboveMaxOrder
+	}
+	if qty > inv.InstantQty {
+		return ErrInventoryInsufficientStock
+	}
+	return nil
 }
 
 // LinkPromotion links a promotion campaign to this inventory item.

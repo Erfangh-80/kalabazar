@@ -4,9 +4,10 @@ import "time"
 
 // WarehouseLinkedToStore is emitted when a warehouse is linked to a store.
 type WarehouseLinkedToStore struct {
-	WarehouseID string
-	StoreID     string
-	Timestamp   time.Time
+	WarehouseID  string
+	StoreID      string
+	RelationType string
+	Timestamp    time.Time
 }
 
 func (e WarehouseLinkedToStore) EventName() string { return "warehouse.linked_to_store" }

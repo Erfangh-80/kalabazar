@@ -2,6 +2,16 @@ package event
 
 import "time"
 
+// StoreCategoryAllowed is emitted when a category is requested/approved for a store.
+type StoreCategoryAllowed struct {
+	StoreID    string
+	CategoryID string
+	Status     string
+	Timestamp  time.Time
+}
+
+func (e StoreCategoryAllowed) EventName() string { return "store.category_allowed" }
+
 // StoreCreated is emitted when a new store is registered.
 type StoreCreated struct {
 	StoreID   string

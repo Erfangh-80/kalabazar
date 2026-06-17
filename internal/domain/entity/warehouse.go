@@ -40,6 +40,7 @@ type Warehouse struct {
 	Name         string
 	Address      Address
 	AccessType   string
+	RelationType string
 	TotalCapacity   int
 	UsedCapacity    int
 	Status       WarehouseStatus
@@ -145,17 +146,19 @@ func (w *Warehouse) Deactivate() error {
 	return nil
 }
 
-// LinkToStore links this warehouse to a store as its primary warehouse.
-func (w *Warehouse) LinkToStore(storeID string) error {
+// LinkToStore links this warehouse to a store with the given relation type.
+func (w *Warehouse) LinkToStore(storeID string, relationType string) error {
 	if storeID == "" {
 		return ErrWarehouseInvalidStoreID
 	}
 	w.StoreID = storeID
+	w.RelationType = relationType
 	w.UpdatedAt = time.Now()
 	w.events = append(w.events, event.WarehouseLinkedToStore{
-		WarehouseID: w.ID,
-		StoreID:     storeID,
-		Timestamp:   w.UpdatedAt,
+		WarehouseID:  w.ID,
+		StoreID:      storeID,
+		RelationType: relationType,
+		Timestamp:    w.UpdatedAt,
 	})
 	return nil
 }
