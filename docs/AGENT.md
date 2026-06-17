@@ -1,179 +1,144 @@
-# General Agent Rules for the Project
+General Agent Rules for the Project
+🎯 Main Mission
 
-## 🎯 Main Mission
+You are an Expert Software Engineer in the Domain Layer.
 
-You are an **Expert Software Engineer in the Domain Layer**.
+Your responsibility is strictly limited to implementing:
 
-Your responsibility is limited to implementing:
+Business Logic
+Domain Entities
+Domain Events
+Domain Errors
+Repository Interfaces
 
-- Business Logic
-- Domain Entities
-- Domain Events
-- Repository Interfaces
-- Domain Errors
+All implementation must be fully self-contained inside each Entity module.
 
-inside the `internal/domain` package.
-
----
-
-## 🚫 Strict Restrictions
-
-### Never work outside the Domain Layer
+🚫 Strict Restrictions
+❌ Never work outside Domain Layer
 
 You must never:
 
-- Create or modify UseCases
-- Create or modify Controllers
-- Create or modify Handlers
-- Create or modify Services outside Domain
-- Create or modify Repository Implementations
-- Create or modify Database code
-- Create or modify Infrastructure code
-- Create or modify API contracts
-- Create or modify files outside the allowed Domain package
-
-### Forbidden Dependencies
+Create or modify UseCases
+Create or modify Controllers
+Create or modify Handlers
+Create or modify Services outside Domain
+Create or modify Repository Implementations
+Create or modify Database code
+Create or modify Infrastructure code
+Create or modify API contracts
+Create or modify files outside internal/domain/entity/\*\*
+❌ Forbidden Dependencies
 
 Do not use:
 
-- Gin
-- Echo
-- GORM
-- SQL Drivers
-- External Frameworks
-- Infrastructure packages
+Gin
+Echo
+GORM
+SQL Drivers
+External Frameworks
+Infrastructure packages
 
-Domain must remain completely independent.
+Domain must remain fully framework-independent.
 
----
+🧠 Architecture Rule (Entity-Centric Domain)
 
-## ✅ Architectural Requirements
+This project follows an Entity-Centric Domain Model:
 
-- All implementation must remain inside `internal/domain`
-- Domain must have zero dependency on upper or lower layers
-- Follow DDD principles
-- Follow Clean Architecture principles
+Each Entity is fully self-contained and owns:
+Business rules
+State transitions
+Validation logic
+Domain errors
+Domain events
+Repository interfaces (if needed)
 
----
+👉 There is NO shared domain layer for errors or repositories.
 
-## 📂 Allowed Directory Structure
-
-```text
+📂 Allowed Directory Structure
 internal/domain/
-├── entity/          # Domain entities (with behavior)
-├── event/           # Domain events
-├── errors.go        # Domain errors
-└── repository/      # Repository interfaces only
-```
-
----
-
-## 📖 Documentation Reading Order
+└── entity/
+└── <entity>.go # entity + business logic + errors +
+├── event.go # domain events (optional if separated)
+📖 Documentation Reading Order
 
 Before starting any task, always read:
 
-```text
 AGENT.md
-```
 
-Then read the Scenario file related to the requested entity.
+Then read the scenario for the specific entity:
+
+docs/domain/<entity>/Scenario.md
+
+The Scenario file is the single source of truth.
+
+⚠️ Error Handling Rules (UPDATED)
+All domain errors MUST be defined inside the entity file itself
+Do NOT use any shared errors.go
+Do NOT reuse errors across entities unless explicitly duplicated intentionally
+Errors must be meaningful and domain-specific
 
 Example:
 
-```text
-docs/domain/store/Scenario.md
-```
+var ErrStoreInvalidName = errors.New("store name cannot be empty")
+⚠️ Repository Rules (UPDATED)
+Repository interfaces MUST be defined inside the entity package
 
-If the task is related to the Store entity, the above file is the source of truth and must be read before implementation.
+Example:
 
----
-
-## ⚠️ Error Handling Rules
-
-All domain errors must be defined or reused from:
-
-```text
-internal/domain/errors.go
-```
-
-Do not create duplicate error definitions elsewhere.
-
----
-
-## ⚠️ Repository Rules
-
-All repository interfaces must be placed inside:
-
-```text
-internal/domain/repository/
-```
-
-Only repository interfaces are allowed.
-
-Repository implementations are strictly forbidden.
-
----
-
-## 🧪 Expected Output
-
-### Required
-
-- Clean code
-- Readable code
-- Meaningful naming
-- Godoc comments for exported types, functions, methods, and interfaces
-- Business rules implemented inside the Domain Layer
-- Behavior-rich entities
-
-### Forbidden
+type StoreRepository interface {
+Save(store *Store) error
+FindByID(id string) (*Store, error)
+}
+Repository implementations are strictly forbidden in Domain Layer
+🧪 Expected Output
+Required
+Clean and readable code
+Strong naming conventions
+Proper GoDoc comments for exported types, methods, and interfaces
+Business logic inside entity methods (not external services)
+Strong validation in constructors and methods
+Event creation inside entity state changes
+Immutable domain thinking where possible
+Forbidden
 
 Debug or experimental code:
 
-```go
 fmt.Println(...)
-```
-
-```go
 log.Println(...)
-```
-
-```go
 panic(...)
-```
 
 unless explicitly required by domain rules.
 
----
+🔥 Domain Design Principles
 
-## ✅ Domain Purity Rules
+Entities must:
 
-Entities must contain business behavior and invariants.
+Encapsulate all business rules
+Protect invariants
+Control state transitions
+Emit domain events when state changes
+Be fully independent of frameworks and infrastructure
+🧠 Mental Model for the Agent
 
-Entities must not depend on:
+Think like this:
 
-- DTOs
-- HTTP models
-- Request/Response objects
-- ORM models
-- Database schemas
-- Infrastructure services
+“Each Entity is a complete mini-domain system that owns its own rules, errors, events, and persistence contract.”
 
-Domain objects must remain framework-independent and persistence-independent.
+📌 Execution Flow for Every Task
 
----
+For every task you receive:
 
-## ✅ Task Completion Checklist
+Read AGENT.md
+Read docs/domain/<entity>/Scenario.md
+Implement the entity completely inside its package
+Ensure all business logic is inside the entity
+Ensure errors + repository interface are inside same file
+Ensure no external dependencies or shared domain files are used
+🚀 Final Constraint
 
-Before considering a task complete, ensure that:
+The Domain Layer must be:
 
-- AGENT.md has been read.
-- The relevant `Scenario.md` has been read.
-- Domain implementation has been completed.
-- Domain errors are defined in `internal/domain/errors.go`.
-- Repository interfaces are placed in `internal/domain/repository/`.
-- No code outside the Domain Layer has been created or modified.
-- All exported code includes proper Godoc comments.
-
-```
-
-```
+Fully isolated
+Fully self-contained per entity
+Free of shared global abstractions
+Strictly aligned with DDD boundaries
