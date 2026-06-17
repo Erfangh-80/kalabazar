@@ -15,6 +15,7 @@ var (
 	ErrPromotionAlreadyRejected    = errors.New("promotion is already rejected")
 	ErrPromotionApprovalNotRequired = errors.New("promotion does not require approval")
 	ErrPromotionNotApproved        = errors.New("promotion is not approved")
+	ErrPromotionInvalidProductID   = errors.New("product id cannot be empty")
 	ErrPromotionAlreadyActive      = errors.New("promotion is already active")
 	ErrPromotionAlreadyInactive    = errors.New("promotion is already inactive")
 	ErrPromotionNotFound           = errors.New("promotion not found")
@@ -32,16 +33,18 @@ const (
 
 // Promotion represents a discount campaign with a time frame and optional approval.
 type Promotion struct {
-	ID               string
-	Title            string
-	Description      string
-	StartAt          time.Time
-	EndAt            time.Time
-	RequiresApproval bool
-	ApprovalStatus   ApprovalStatus
-	IsActive         bool
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
+	ID                   string
+	Title                string
+	Description          string
+	StartAt              time.Time
+	EndAt                time.Time
+	RequiresApproval     bool
+	ApprovalStatus       ApprovalStatus
+	IsActive             bool
+	ExpireSaleWithPromotion bool
+	LinkedProductIDs     []string
+	CreatedAt            time.Time
+	UpdatedAt            time.Time
 
 	events []any
 }
@@ -82,6 +85,21 @@ func NewPromotion(id, title, description string, startAt, endAt time.Time, requi
 		Timestamp:   now,
 	})
 	return p, nil
+}
+
+// LinkToProduct links this campaign to a product.
+func (p *Promotion) LinkToProduct(productID string) error {
+	if productID == "" {
+		return ErrPromotionInvalidProductID
+	}
+	p.LinkedProductIDs = append(p.LinkedProductIDs, productID)
+	p.UpdatedAt = time.Now()
+	p.events = append(p.events, event.PromotionCampaignLinkedToProduct{
+		PromotionID: p.ID,
+		ProductID:   productID,
+		Timestamp:   p.UpdatedAt,
+	})
+	return nil
 }
 
 // Approve transitions the campaign to approved status.

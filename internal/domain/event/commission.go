@@ -11,3 +11,13 @@ type CommissionRuleCreated struct {
 }
 
 func (e CommissionRuleCreated) EventName() string { return "commission.rule.created" }
+
+// CommissionCalculated is emitted when a commission amount is calculated for a sale.
+type CommissionCalculated struct {
+	CommissionID string
+	SaleAmount   float64
+	CommissionAmount float64
+	Timestamp    time.Time
+}
+
+func (e CommissionCalculated) EventName() string { return "commission.calculated" }

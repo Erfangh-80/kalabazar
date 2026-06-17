@@ -11,4 +11,4 @@ type ReferencePriceCreated struct {
 	Timestamp        time.Time
 }
 
-func (e ReferencePriceCreated) EventName() string { return "reference_price.created" }
+func (e ReferencePriceCreated) EventName() string { return "pricing.reference_price_recorded" }

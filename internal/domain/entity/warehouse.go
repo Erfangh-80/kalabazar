@@ -9,17 +9,19 @@ import (
 )
 
 var (
-	ErrWarehouseInvalidName       = errors.New("warehouse name cannot be empty")
-	ErrWarehouseNameTooLong       = errors.New("warehouse name cannot exceed 255 characters")
-	ErrWarehouseInvalidSellerID   = errors.New("seller id cannot be empty")
-	ErrWarehouseInvalidID         = errors.New("warehouse id cannot be empty")
-	ErrWarehouseInvalidCapacity   = errors.New("total capacity must be greater than zero")
-	ErrWarehouseCapacityExceeded  = errors.New("cannot exceed warehouse storage capacity")
-	ErrWarehouseInvalidUsedAmount = errors.New("used capacity cannot be negative")
-	ErrWarehouseInactive          = errors.New("warehouse is inactive")
-	ErrWarehouseAlreadyActive     = errors.New("warehouse is already active")
-	ErrWarehouseAlreadyInactive   = errors.New("warehouse is already inactive")
-	ErrWarehouseNotFound          = errors.New("warehouse not found")
+	ErrWarehouseInvalidName        = errors.New("warehouse name cannot be empty")
+	ErrWarehouseNameTooLong        = errors.New("warehouse name cannot exceed 255 characters")
+	ErrWarehouseInvalidSellerID    = errors.New("seller id cannot be empty")
+	ErrWarehouseInvalidID          = errors.New("warehouse id cannot be empty")
+	ErrWarehouseInvalidCapacity    = errors.New("total capacity must be greater than zero")
+	ErrWarehouseCapacityExceeded   = errors.New("cannot exceed warehouse storage capacity")
+	ErrWarehouseInvalidUsedAmount  = errors.New("used capacity cannot be negative")
+	ErrWarehouseInactive           = errors.New("warehouse is inactive")
+	ErrWarehouseAlreadyActive      = errors.New("warehouse is already active")
+	ErrWarehouseAlreadyInactive    = errors.New("warehouse is already inactive")
+	ErrWarehouseInvalidAccessType  = errors.New("access type must be 'public' or 'private'")
+	ErrWarehouseInvalidStoreID     = errors.New("store id cannot be empty")
+	ErrWarehouseNotFound           = errors.New("warehouse not found")
 )
 
 // WarehouseStatus represents the operational status of a warehouse.
@@ -34,8 +36,10 @@ const (
 type Warehouse struct {
 	ID           string
 	SellerID     string
+	StoreID      string
 	Name         string
 	Address      Address
+	AccessType   string
 	TotalCapacity   int
 	UsedCapacity    int
 	Status       WarehouseStatus
@@ -46,7 +50,7 @@ type Warehouse struct {
 }
 
 // NewWarehouse creates a new Warehouse with active status.
-func NewWarehouse(id, sellerID, name string, address Address, totalCapacity int) (*Warehouse, error) {
+func NewWarehouse(id, sellerID, name string, address Address, totalCapacity int, accessType string) (*Warehouse, error) {
 	if id == "" {
 		return nil, ErrWarehouseInvalidID
 	}
@@ -65,6 +69,9 @@ func NewWarehouse(id, sellerID, name string, address Address, totalCapacity int)
 	if totalCapacity <= 0 {
 		return nil, ErrWarehouseInvalidCapacity
 	}
+	if accessType != "public" && accessType != "private" {
+		return nil, ErrWarehouseInvalidAccessType
+	}
 
 	now := time.Now()
 	w := &Warehouse{
@@ -72,6 +79,7 @@ func NewWarehouse(id, sellerID, name string, address Address, totalCapacity int)
 		SellerID:     sellerID,
 		Name:         name,
 		Address:      address,
+		AccessType:   accessType,
 		TotalCapacity:   totalCapacity,
 		UsedCapacity:    0,
 		Status:       WarehouseStatusActive,
@@ -132,6 +140,21 @@ func (w *Warehouse) Deactivate() error {
 	w.UpdatedAt = time.Now()
 	w.events = append(w.events, event.WarehouseDeactivated{
 		WarehouseID: w.ID,
+		Timestamp:   w.UpdatedAt,
+	})
+	return nil
+}
+
+// LinkToStore links this warehouse to a store as its primary warehouse.
+func (w *Warehouse) LinkToStore(storeID string) error {
+	if storeID == "" {
+		return ErrWarehouseInvalidStoreID
+	}
+	w.StoreID = storeID
+	w.UpdatedAt = time.Now()
+	w.events = append(w.events, event.WarehouseLinkedToStore{
+		WarehouseID: w.ID,
+		StoreID:     storeID,
 		Timestamp:   w.UpdatedAt,
 	})
 	return nil

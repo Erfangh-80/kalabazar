@@ -9,7 +9,7 @@ type PromotionCreated struct {
 	Timestamp   time.Time
 }
 
-func (e PromotionCreated) EventName() string { return "promotion.created" }
+func (e PromotionCreated) EventName() string { return "promotion.campaign_created" }
 
 // PromotionApproved is emitted when a campaign is approved by an administrator.
 type PromotionApproved struct {
@@ -17,7 +17,7 @@ type PromotionApproved struct {
 	Timestamp   time.Time
 }
 
-func (e PromotionApproved) EventName() string { return "promotion.approved" }
+func (e PromotionApproved) EventName() string { return "promotion.campaign_approved" }
 
 // PromotionRejected is emitted when a campaign is rejected by an administrator.
 type PromotionRejected struct {
@@ -25,7 +25,16 @@ type PromotionRejected struct {
 	Timestamp   time.Time
 }
 
-func (e PromotionRejected) EventName() string { return "promotion.rejected" }
+func (e PromotionRejected) EventName() string { return "promotion.campaign_rejected" }
+
+// PromotionCampaignLinkedToProduct is emitted when a campaign is linked to a product.
+type PromotionCampaignLinkedToProduct struct {
+	PromotionID string
+	ProductID   string
+	Timestamp   time.Time
+}
+
+func (e PromotionCampaignLinkedToProduct) EventName() string { return "promotion.campaign_linked_to_product" }
 
 // PromotionActivated is emitted when a campaign is activated based on its time frame.
 type PromotionActivated struct {

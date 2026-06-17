@@ -78,7 +78,14 @@ func (c *Commission) Calculate(saleAmount float64, quantity int) (float64, error
 	if quantity < c.MinQty {
 		return 0, ErrCommissionConditionsNotMet
 	}
-	return saleAmount * (c.RatePercent / 100), nil
+	commissionAmount := saleAmount * (c.RatePercent / 100)
+	c.events = append(c.events, event.CommissionCalculated{
+		CommissionID:     c.ID,
+		SaleAmount:       saleAmount,
+		CommissionAmount: commissionAmount,
+		Timestamp:        time.Now(),
+	})
+	return commissionAmount, nil
 }
 
 // Events returns and clears the domain events produced by the entity.

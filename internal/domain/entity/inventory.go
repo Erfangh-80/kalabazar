@@ -19,6 +19,9 @@ var (
 	ErrInventoryInvalidPrice          = errors.New("final price cannot be negative")
 	ErrInventoryInvalidTimeRange      = errors.New("end time must be after start time")
 	ErrInventoryNotFound              = errors.New("inventory item not found")
+	ErrInventoryAlreadyLinkedToPromotion = errors.New("inventory already linked to a promotion")
+	ErrInventoryInvalidPromotionID    = errors.New("promotion id cannot be empty")
+	ErrInventoryInvalidPromotionStatus = errors.New("invalid promotion status")
 )
 
 // VendorSaleStatus represents the sale status controlled by the seller.
@@ -68,6 +71,7 @@ type Inventory struct {
 	StoreID               string
 	WarehouseID           string
 	ProductID             string
+	PromotionID           *string
 	VendorSaleStatus      VendorSaleStatus
 	SystemSaleStatus      SystemSaleStatus
 	CampaignApprovalStatus CampaignApprovalStatus
@@ -242,6 +246,52 @@ func (inv *Inventory) CanBeSold() bool {
 	return inv.VendorSaleStatus == VendorSaleStatusActive &&
 		inv.SystemSaleStatus == SystemSaleStatusActive &&
 		inv.InstantQty > 0
+}
+
+// LinkPromotion links a promotion campaign to this inventory item.
+func (inv *Inventory) LinkPromotion(promotionID string) error {
+	if promotionID == "" {
+		return ErrInventoryInvalidPromotionID
+	}
+	if inv.PromotionID != nil {
+		return ErrInventoryAlreadyLinkedToPromotion
+	}
+	inv.PromotionID = &promotionID
+	inv.UpdatedAt = time.Now()
+	inv.events = append(inv.events, event.InventoryPromotionLinked{
+		InventoryID: inv.ID,
+		PromotionID: promotionID,
+		Timestamp:   inv.UpdatedAt,
+	})
+	return nil
+}
+
+// UpdatePromotionStatus changes the campaign approval status on this item.
+func (inv *Inventory) UpdatePromotionStatus(status CampaignApprovalStatus) error {
+	if status != CampaignApprovalPending && status != CampaignApprovalApproved && status != CampaignApprovalRejected {
+		return ErrInventoryInvalidPromotionStatus
+	}
+	inv.CampaignApprovalStatus = status
+	inv.UpdatedAt = time.Now()
+	inv.events = append(inv.events, event.InventoryPromotionStatusChanged{
+		InventoryID: inv.ID,
+		Status:      string(status),
+		Timestamp:   inv.UpdatedAt,
+	})
+	return nil
+}
+
+// ResetPrice resets the final price to match the base price.
+func (inv *Inventory) ResetPrice() error {
+	inv.FinalPrice = inv.BasePrice
+	inv.UpdatedAt = time.Now()
+	inv.events = append(inv.events, event.InventoryPriceUpdated{
+		InventoryID: inv.ID,
+		BasePrice:   inv.BasePrice,
+		FinalPrice:  inv.FinalPrice,
+		Timestamp:   inv.UpdatedAt,
+	})
+	return nil
 }
 
 // Events returns and clears the domain events produced by the entity.

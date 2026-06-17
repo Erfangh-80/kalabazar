@@ -71,3 +71,21 @@ type InventoryPriceUpdated struct {
 }
 
 func (e InventoryPriceUpdated) EventName() string { return "inventory.price_updated" }
+
+// InventoryPromotionLinked is emitted when a promotion campaign is linked to an inventory item.
+type InventoryPromotionLinked struct {
+	InventoryID string
+	PromotionID string
+	Timestamp   time.Time
+}
+
+func (e InventoryPromotionLinked) EventName() string { return "inventory.promotion_linked" }
+
+// InventoryPromotionStatusChanged is emitted when the promotion approval status changes.
+type InventoryPromotionStatusChanged struct {
+	InventoryID string
+	Status      string
+	Timestamp   time.Time
+}
+
+func (e InventoryPromotionStatusChanged) EventName() string { return "inventory.promotion_status_changed" }

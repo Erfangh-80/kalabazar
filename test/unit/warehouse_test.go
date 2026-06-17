@@ -15,7 +15,7 @@ func validAddress() entity.Address {
 
 func TestNewWarehouse_Success(t *testing.T) {
 	addr := validAddress()
-	w, err := entity.NewWarehouse("wh-1", "usr-1", "Main Warehouse", addr, 1000)
+	w, err := entity.NewWarehouse("wh-1", "usr-1", "Main Warehouse", addr, 1000, "public")
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -43,21 +43,21 @@ func TestNewWarehouse_Success(t *testing.T) {
 }
 
 func TestNewWarehouse_InvalidID(t *testing.T) {
-	_, err := entity.NewWarehouse("", "usr-1", "WH", validAddress(), 100)
+	_, err := entity.NewWarehouse("", "usr-1", "WH", validAddress(), 100, "public")
 	if err != entity.ErrWarehouseInvalidID {
 		t.Errorf("expected ErrWarehouseInvalidID, got %v", err)
 	}
 }
 
 func TestNewWarehouse_InvalidSellerID(t *testing.T) {
-	_, err := entity.NewWarehouse("wh-1", "", "WH", validAddress(), 100)
+	_, err := entity.NewWarehouse("wh-1", "", "WH", validAddress(), 100, "public")
 	if err != entity.ErrWarehouseInvalidSellerID {
 		t.Errorf("expected ErrWarehouseInvalidSellerID, got %v", err)
 	}
 }
 
 func TestNewWarehouse_InvalidName(t *testing.T) {
-	_, err := entity.NewWarehouse("wh-1", "usr-1", "", validAddress(), 100)
+	_, err := entity.NewWarehouse("wh-1", "usr-1", "", validAddress(), 100, "public")
 	if err != entity.ErrWarehouseInvalidName {
 		t.Errorf("expected ErrWarehouseInvalidName, got %v", err)
 	}
@@ -68,7 +68,7 @@ func TestNewWarehouse_NameTooLong(t *testing.T) {
 	for i := range name {
 		name[i] = 'a'
 	}
-	_, err := entity.NewWarehouse("wh-1", "usr-1", string(name), validAddress(), 100)
+	_, err := entity.NewWarehouse("wh-1", "usr-1", string(name), validAddress(), 100, "public")
 	if err != entity.ErrWarehouseNameTooLong {
 		t.Errorf("expected ErrWarehouseNameTooLong, got %v", err)
 	}
@@ -76,28 +76,28 @@ func TestNewWarehouse_NameTooLong(t *testing.T) {
 
 func TestNewWarehouse_InvalidAddress(t *testing.T) {
 	addr := entity.Address{Street: "", City: "", Country: ""}
-	_, err := entity.NewWarehouse("wh-1", "usr-1", "WH", addr, 100)
+	_, err := entity.NewWarehouse("wh-1", "usr-1", "WH", addr, 100, "public")
 	if err == nil {
 		t.Fatal("expected error for invalid address")
 	}
 }
 
 func TestNewWarehouse_InvalidCapacity(t *testing.T) {
-	_, err := entity.NewWarehouse("wh-1", "usr-1", "WH", validAddress(), 0)
+	_, err := entity.NewWarehouse("wh-1", "usr-1", "WH", validAddress(), 0, "public")
 	if err != entity.ErrWarehouseInvalidCapacity {
 		t.Errorf("expected ErrWarehouseInvalidCapacity, got %v", err)
 	}
 }
 
 func TestNewWarehouse_NegativeCapacity(t *testing.T) {
-	_, err := entity.NewWarehouse("wh-1", "usr-1", "WH", validAddress(), -10)
+	_, err := entity.NewWarehouse("wh-1", "usr-1", "WH", validAddress(), -10, "public")
 	if err != entity.ErrWarehouseInvalidCapacity {
 		t.Errorf("expected ErrWarehouseInvalidCapacity, got %v", err)
 	}
 }
 
 func TestNewWarehouse_EventEmitted(t *testing.T) {
-	w, err := entity.NewWarehouse("wh-1", "usr-1", "WH", validAddress(), 100)
+	w, err := entity.NewWarehouse("wh-1", "usr-1", "WH", validAddress(), 100, "public")
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -115,7 +115,7 @@ func TestNewWarehouse_EventEmitted(t *testing.T) {
 }
 
 func TestWarehouse_UpdateInfo_Success(t *testing.T) {
-	w, _ := entity.NewWarehouse("wh-1", "usr-1", "WH", validAddress(), 100)
+	w, _ := entity.NewWarehouse("wh-1", "usr-1", "WH", validAddress(), 100, "public")
 	newAddr := entity.Address{
 		Street: "456 New St", City: "Shiraz", Country: "Iran",
 	}
@@ -132,7 +132,7 @@ func TestWarehouse_UpdateInfo_Success(t *testing.T) {
 }
 
 func TestWarehouse_UpdateInfo_InvalidName(t *testing.T) {
-	w, _ := entity.NewWarehouse("wh-1", "usr-1", "WH", validAddress(), 100)
+	w, _ := entity.NewWarehouse("wh-1", "usr-1", "WH", validAddress(), 100, "public")
 	err := w.UpdateInfo("", validAddress())
 	if err != entity.ErrWarehouseInvalidName {
 		t.Errorf("expected ErrWarehouseInvalidName, got %v", err)
@@ -140,7 +140,7 @@ func TestWarehouse_UpdateInfo_InvalidName(t *testing.T) {
 }
 
 func TestWarehouse_UpdateInfo_InvalidAddress(t *testing.T) {
-	w, _ := entity.NewWarehouse("wh-1", "usr-1", "WH", validAddress(), 100)
+	w, _ := entity.NewWarehouse("wh-1", "usr-1", "WH", validAddress(), 100, "public")
 	err := w.UpdateInfo("New Name", entity.Address{})
 	if err == nil {
 		t.Fatal("expected error for invalid address")
@@ -148,7 +148,7 @@ func TestWarehouse_UpdateInfo_InvalidAddress(t *testing.T) {
 }
 
 func TestWarehouse_Activate_Success(t *testing.T) {
-	w, _ := entity.NewWarehouse("wh-1", "usr-1", "WH", validAddress(), 100)
+	w, _ := entity.NewWarehouse("wh-1", "usr-1", "WH", validAddress(), 100, "public")
 	w.Status = entity.WarehouseStatusInactive
 	w.Events()
 
@@ -169,7 +169,7 @@ func TestWarehouse_Activate_Success(t *testing.T) {
 }
 
 func TestWarehouse_Activate_AlreadyActive(t *testing.T) {
-	w, _ := entity.NewWarehouse("wh-1", "usr-1", "WH", validAddress(), 100)
+	w, _ := entity.NewWarehouse("wh-1", "usr-1", "WH", validAddress(), 100, "public")
 	w.Events()
 
 	err := w.Activate()
@@ -179,7 +179,7 @@ func TestWarehouse_Activate_AlreadyActive(t *testing.T) {
 }
 
 func TestWarehouse_Deactivate_Success(t *testing.T) {
-	w, _ := entity.NewWarehouse("wh-1", "usr-1", "WH", validAddress(), 100)
+	w, _ := entity.NewWarehouse("wh-1", "usr-1", "WH", validAddress(), 100, "public")
 	w.Events()
 
 	err := w.Deactivate()
@@ -199,7 +199,7 @@ func TestWarehouse_Deactivate_Success(t *testing.T) {
 }
 
 func TestWarehouse_Deactivate_AlreadyInactive(t *testing.T) {
-	w, _ := entity.NewWarehouse("wh-1", "usr-1", "WH", validAddress(), 100)
+	w, _ := entity.NewWarehouse("wh-1", "usr-1", "WH", validAddress(), 100, "public")
 	w.Deactivate()
 	w.Events()
 
@@ -210,7 +210,7 @@ func TestWarehouse_Deactivate_AlreadyInactive(t *testing.T) {
 }
 
 func TestWarehouse_IncreaseUsedCapacity_Success(t *testing.T) {
-	w, _ := entity.NewWarehouse("wh-1", "usr-1", "WH", validAddress(), 100)
+	w, _ := entity.NewWarehouse("wh-1", "usr-1", "WH", validAddress(), 100, "public")
 	err := w.IncreaseUsedCapacity(30)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
@@ -221,7 +221,7 @@ func TestWarehouse_IncreaseUsedCapacity_Success(t *testing.T) {
 }
 
 func TestWarehouse_IncreaseUsedCapacity_ExactCapacity(t *testing.T) {
-	w, _ := entity.NewWarehouse("wh-1", "usr-1", "WH", validAddress(), 100)
+	w, _ := entity.NewWarehouse("wh-1", "usr-1", "WH", validAddress(), 100, "public")
 	err := w.IncreaseUsedCapacity(100)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
@@ -232,7 +232,7 @@ func TestWarehouse_IncreaseUsedCapacity_ExactCapacity(t *testing.T) {
 }
 
 func TestWarehouse_IncreaseUsedCapacity_Exceeded(t *testing.T) {
-	w, _ := entity.NewWarehouse("wh-1", "usr-1", "WH", validAddress(), 100)
+	w, _ := entity.NewWarehouse("wh-1", "usr-1", "WH", validAddress(), 100, "public")
 	err := w.IncreaseUsedCapacity(101)
 	if err != entity.ErrWarehouseCapacityExceeded {
 		t.Errorf("expected ErrWarehouseCapacityExceeded, got %v", err)
@@ -240,7 +240,7 @@ func TestWarehouse_IncreaseUsedCapacity_Exceeded(t *testing.T) {
 }
 
 func TestWarehouse_IncreaseUsedCapacity_Inactive(t *testing.T) {
-	w, _ := entity.NewWarehouse("wh-1", "usr-1", "WH", validAddress(), 100)
+	w, _ := entity.NewWarehouse("wh-1", "usr-1", "WH", validAddress(), 100, "public")
 	w.Deactivate()
 	err := w.IncreaseUsedCapacity(10)
 	if err != entity.ErrWarehouseInactive {
@@ -249,7 +249,7 @@ func TestWarehouse_IncreaseUsedCapacity_Inactive(t *testing.T) {
 }
 
 func TestWarehouse_IncreaseUsedCapacity_Negative(t *testing.T) {
-	w, _ := entity.NewWarehouse("wh-1", "usr-1", "WH", validAddress(), 100)
+	w, _ := entity.NewWarehouse("wh-1", "usr-1", "WH", validAddress(), 100, "public")
 	err := w.IncreaseUsedCapacity(-10)
 	if err != entity.ErrWarehouseInvalidUsedAmount {
 		t.Errorf("expected ErrWarehouseInvalidUsedAmount, got %v", err)
@@ -257,7 +257,7 @@ func TestWarehouse_IncreaseUsedCapacity_Negative(t *testing.T) {
 }
 
 func TestWarehouse_DecreaseUsedCapacity_Success(t *testing.T) {
-	w, _ := entity.NewWarehouse("wh-1", "usr-1", "WH", validAddress(), 100)
+	w, _ := entity.NewWarehouse("wh-1", "usr-1", "WH", validAddress(), 100, "public")
 	w.IncreaseUsedCapacity(50)
 	err := w.DecreaseUsedCapacity(20)
 	if err != nil {
@@ -269,7 +269,7 @@ func TestWarehouse_DecreaseUsedCapacity_Success(t *testing.T) {
 }
 
 func TestWarehouse_DecreaseUsedCapacity_Negative(t *testing.T) {
-	w, _ := entity.NewWarehouse("wh-1", "usr-1", "WH", validAddress(), 100)
+	w, _ := entity.NewWarehouse("wh-1", "usr-1", "WH", validAddress(), 100, "public")
 	err := w.DecreaseUsedCapacity(-10)
 	if err != entity.ErrWarehouseInvalidUsedAmount {
 		t.Errorf("expected ErrWarehouseInvalidUsedAmount, got %v", err)
@@ -277,7 +277,7 @@ func TestWarehouse_DecreaseUsedCapacity_Negative(t *testing.T) {
 }
 
 func TestWarehouse_DecreaseUsedCapacity_BelowZero(t *testing.T) {
-	w, _ := entity.NewWarehouse("wh-1", "usr-1", "WH", validAddress(), 100)
+	w, _ := entity.NewWarehouse("wh-1", "usr-1", "WH", validAddress(), 100, "public")
 	err := w.DecreaseUsedCapacity(10)
 	if err != entity.ErrWarehouseInvalidUsedAmount {
 		t.Errorf("expected ErrWarehouseInvalidUsedAmount, got %v", err)
@@ -285,7 +285,7 @@ func TestWarehouse_DecreaseUsedCapacity_BelowZero(t *testing.T) {
 }
 
 func TestWarehouse_IsAtCapacity(t *testing.T) {
-	w, _ := entity.NewWarehouse("wh-1", "usr-1", "WH", validAddress(), 100)
+	w, _ := entity.NewWarehouse("wh-1", "usr-1", "WH", validAddress(), 100, "public")
 	if w.IsAtCapacity() {
 		t.Error("expected not at capacity initially")
 	}
@@ -296,7 +296,7 @@ func TestWarehouse_IsAtCapacity(t *testing.T) {
 }
 
 func TestWarehouse_AvailableCapacity(t *testing.T) {
-	w, _ := entity.NewWarehouse("wh-1", "usr-1", "WH", validAddress(), 100)
+	w, _ := entity.NewWarehouse("wh-1", "usr-1", "WH", validAddress(), 100, "public")
 	if avail := w.AvailableCapacity(); avail != 100 {
 		t.Errorf("expected 100, got %d", avail)
 	}
@@ -307,7 +307,7 @@ func TestWarehouse_AvailableCapacity(t *testing.T) {
 }
 
 func TestWarehouse_Events_ClearedAfterCall(t *testing.T) {
-	w, _ := entity.NewWarehouse("wh-1", "usr-1", "WH", validAddress(), 100)
+	w, _ := entity.NewWarehouse("wh-1", "usr-1", "WH", validAddress(), 100, "public")
 	events1 := w.Events()
 	if len(events1) != 1 {
 		t.Fatalf("expected 1 event, got %d", len(events1))
