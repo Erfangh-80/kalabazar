@@ -52,28 +52,6 @@ type Warehouse struct {
 
 // NewWarehouse creates a new Warehouse with active status.
 func NewWarehouse(id, sellerID, name string, address Address, totalCapacity int, accessType string) (*Warehouse, error) {
-	if id == "" {
-		return nil, ErrWarehouseInvalidID
-	}
-	if sellerID == "" {
-		return nil, ErrWarehouseInvalidSellerID
-	}
-	if name == "" {
-		return nil, ErrWarehouseInvalidName
-	}
-	if utf8.RuneCountInString(name) > 255 {
-		return nil, ErrWarehouseNameTooLong
-	}
-	if err := address.Validate(); err != nil {
-		return nil, err
-	}
-	if totalCapacity <= 0 {
-		return nil, ErrWarehouseInvalidCapacity
-	}
-	if accessType != "public" && accessType != "private" {
-		return nil, ErrWarehouseInvalidAccessType
-	}
-
 	now := time.Now()
 	w := &Warehouse{
 		ID:           id,
@@ -87,6 +65,9 @@ func NewWarehouse(id, sellerID, name string, address Address, totalCapacity int,
 		CreatedAt:    now,
 		UpdatedAt:    now,
 	}
+	if err := w.validate(); err != nil {
+		return nil, err
+	}
 	w.events = append(w.events, event.WarehouseCreated{
 		WarehouseID:   id,
 		SellerID:      sellerID,
@@ -96,20 +77,42 @@ func NewWarehouse(id, sellerID, name string, address Address, totalCapacity int,
 	return w, nil
 }
 
+// validate checks all invariant business rules for the Warehouse entity.
+func (w *Warehouse) validate() error {
+	switch {
+	case w.ID == "":
+		return ErrWarehouseInvalidID
+	case w.SellerID == "":
+		return ErrWarehouseInvalidSellerID
+	case w.Name == "":
+		return ErrWarehouseInvalidName
+	case utf8.RuneCountInString(w.Name) > 255:
+		return ErrWarehouseNameTooLong
+	case w.Address.Validate() != nil:
+		return w.Address.Validate()
+	case w.TotalCapacity <= 0:
+		return ErrWarehouseInvalidCapacity
+	case w.UsedCapacity < 0:
+		return ErrWarehouseInvalidUsedAmount
+	case w.UsedCapacity > w.TotalCapacity:
+		return ErrWarehouseCapacityExceeded
+	case w.AccessType != "public" && w.AccessType != "private":
+		return ErrWarehouseInvalidAccessType
+	default:
+		return nil
+	}
+}
+
 // UpdateInfo updates the warehouse's mutable information fields.
 func (w *Warehouse) UpdateInfo(name string, address Address) error {
-	if name == "" {
-		return ErrWarehouseInvalidName
-	}
-	if utf8.RuneCountInString(name) > 255 {
-		return ErrWarehouseNameTooLong
-	}
-	if err := address.Validate(); err != nil {
+	oldName, oldAddr := w.Name, w.Address
+	w.Name = name
+	w.Address = address
+	if err := w.validate(); err != nil {
+		w.Name, w.Address = oldName, oldAddr
 		return err
 	}
 
-	w.Name = name
-	w.Address = address
 	w.UpdatedAt = time.Now()
 	w.events = append(w.events, event.WarehouseUpdated{
 		WarehouseID: w.ID,
@@ -172,10 +175,12 @@ func (w *Warehouse) IncreaseUsedCapacity(amount int) error {
 	if w.Status != WarehouseStatusActive {
 		return ErrWarehouseInactive
 	}
-	if w.UsedCapacity+amount > w.TotalCapacity {
-		return ErrWarehouseCapacityExceeded
-	}
+	oldUsed := w.UsedCapacity
 	w.UsedCapacity += amount
+	if err := w.validate(); err != nil {
+		w.UsedCapacity = oldUsed
+		return err
+	}
 	w.UpdatedAt = time.Now()
 	return nil
 }
@@ -185,10 +190,12 @@ func (w *Warehouse) DecreaseUsedCapacity(amount int) error {
 	if amount < 0 {
 		return ErrWarehouseInvalidUsedAmount
 	}
-	if w.UsedCapacity-amount < 0 {
-		return ErrWarehouseInvalidUsedAmount
-	}
+	oldUsed := w.UsedCapacity
 	w.UsedCapacity -= amount
+	if err := w.validate(); err != nil {
+		w.UsedCapacity = oldUsed
+		return err
+	}
 	w.UpdatedAt = time.Now()
 	return nil
 }

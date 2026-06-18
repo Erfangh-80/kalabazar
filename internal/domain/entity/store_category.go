@@ -34,13 +34,6 @@ type StoreCategory struct {
 
 // NewStoreCategory creates a new StoreCategory with pending status.
 func NewStoreCategory(storeID, categoryID string) (*StoreCategory, error) {
-	if storeID == "" {
-		return nil, ErrStoreCategoryInvalidStoreID
-	}
-	if categoryID == "" {
-		return nil, ErrStoreCategoryInvalidCategoryID
-	}
-
 	now := time.Now()
 	sc := &StoreCategory{
 		StoreID:    storeID,
@@ -49,6 +42,9 @@ func NewStoreCategory(storeID, categoryID string) (*StoreCategory, error) {
 		CreatedAt:  now,
 		UpdatedAt:  now,
 	}
+	if err := sc.validate(); err != nil {
+		return nil, err
+	}
 	sc.events = append(sc.events, event.StoreCategoryAllowed{
 		StoreID:    storeID,
 		CategoryID: categoryID,
@@ -56,6 +52,18 @@ func NewStoreCategory(storeID, categoryID string) (*StoreCategory, error) {
 		Timestamp:  now,
 	})
 	return sc, nil
+}
+
+// validate checks all invariant business rules for the StoreCategory entity.
+func (sc *StoreCategory) validate() error {
+	switch {
+	case sc.StoreID == "":
+		return ErrStoreCategoryInvalidStoreID
+	case sc.CategoryID == "":
+		return ErrStoreCategoryInvalidCategoryID
+	default:
+		return nil
+	}
 }
 
 // Approve transitions the category permission to approved status.

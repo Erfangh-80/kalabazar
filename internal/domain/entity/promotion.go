@@ -54,19 +54,6 @@ type Promotion struct {
 
 // NewPromotion creates a new Promotion campaign.
 func NewPromotion(id, title, description string, startAt, endAt time.Time, requiresApproval bool, discountPercent float64, isCountdown bool) (*Promotion, error) {
-	if id == "" {
-		return nil, ErrPromotionInvalidID
-	}
-	if title == "" {
-		return nil, ErrPromotionInvalidTitle
-	}
-	if !startAt.Before(endAt) {
-		return nil, ErrPromotionInvalidTimeRange
-	}
-	if discountPercent < 0 || discountPercent > 100 {
-		return nil, ErrPromotionInvalidDiscountPct
-	}
-
 	approvalStatus := PromotionApprovalNone
 	if requiresApproval {
 		approvalStatus = PromotionApprovalPending
@@ -87,12 +74,31 @@ func NewPromotion(id, title, description string, startAt, endAt time.Time, requi
 		CreatedAt:        now,
 		UpdatedAt:        now,
 	}
+	if err := p.validate(); err != nil {
+		return nil, err
+	}
 	p.events = append(p.events, event.PromotionCreated{
 		PromotionID: id,
 		Title:       title,
 		Timestamp:   now,
 	})
 	return p, nil
+}
+
+// validate checks all invariant business rules for the Promotion entity.
+func (p *Promotion) validate() error {
+	switch {
+	case p.ID == "":
+		return ErrPromotionInvalidID
+	case p.Title == "":
+		return ErrPromotionInvalidTitle
+	case !p.StartAt.Before(p.EndAt):
+		return ErrPromotionInvalidTimeRange
+	case p.DiscountPercent < 0 || p.DiscountPercent > 100:
+		return ErrPromotionInvalidDiscountPct
+	default:
+		return nil
+	}
 }
 
 // LinkToProduct links this campaign to a product.

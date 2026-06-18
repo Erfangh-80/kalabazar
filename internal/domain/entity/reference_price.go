@@ -30,19 +30,6 @@ type ReferencePrice struct {
 
 // NewReferencePrice creates a new ReferencePrice with the given values.
 func NewReferencePrice(id, productID string, price float64, source string) (*ReferencePrice, error) {
-	if id == "" {
-		return nil, ErrReferencePriceInvalidID
-	}
-	if productID == "" {
-		return nil, ErrReferencePriceInvalidProductID
-	}
-	if price <= 0 {
-		return nil, ErrReferencePriceInvalidPrice
-	}
-	if source == "" {
-		return nil, ErrReferencePriceInvalidSource
-	}
-
 	now := time.Now()
 	rp := &ReferencePrice{
 		ID:        id,
@@ -50,6 +37,9 @@ func NewReferencePrice(id, productID string, price float64, source string) (*Ref
 		Price:     price,
 		Source:    source,
 		CreatedAt: now,
+	}
+	if err := rp.validate(); err != nil {
+		return nil, err
 	}
 	rp.events = append(rp.events, event.ReferencePriceCreated{
 		ReferencePriceID: id,
@@ -59,6 +49,22 @@ func NewReferencePrice(id, productID string, price float64, source string) (*Ref
 		Timestamp:        now,
 	})
 	return rp, nil
+}
+
+// validate checks all invariant business rules for the ReferencePrice entity.
+func (rp *ReferencePrice) validate() error {
+	switch {
+	case rp.ID == "":
+		return ErrReferencePriceInvalidID
+	case rp.ProductID == "":
+		return ErrReferencePriceInvalidProductID
+	case rp.Price <= 0:
+		return ErrReferencePriceInvalidPrice
+	case rp.Source == "":
+		return ErrReferencePriceInvalidSource
+	default:
+		return nil
+	}
 }
 
 // Events returns and clears the domain events produced by the entity.

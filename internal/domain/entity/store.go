@@ -45,24 +45,6 @@ type Store struct {
 
 // NewStore creates a new Store with active status and default values.
 func NewStore(id, userID, storeName string, contactPhone *string, address *Address, mediaAssets []string) (*Store, error) {
-	if id == "" {
-		return nil, ErrStoreInvalidID
-	}
-	if userID == "" {
-		return nil, ErrStoreInvalidUserID
-	}
-	if storeName == "" {
-		return nil, ErrStoreInvalidName
-	}
-	if utf8.RuneCountInString(storeName) > 255 {
-		return nil, ErrStoreNameTooLong
-	}
-	if address != nil {
-		if err := address.Validate(); err != nil {
-			return nil, err
-		}
-	}
-
 	now := time.Now()
 	store := &Store{
 		ID:                     id,
@@ -77,6 +59,9 @@ func NewStore(id, userID, storeName string, contactPhone *string, address *Addre
 		CreatedAt:              now,
 		UpdatedAt:              now,
 	}
+	if err := store.validate(); err != nil {
+		return nil, err
+	}
 	store.events = append(store.events, event.StoreCreated{
 		StoreID:   id,
 		UserID:    userID,
@@ -86,23 +71,35 @@ func NewStore(id, userID, storeName string, contactPhone *string, address *Addre
 	return store, nil
 }
 
+// validate checks all invariant business rules for the Store entity.
+func (s *Store) validate() error {
+	switch {
+	case s.ID == "":
+		return ErrStoreInvalidID
+	case s.UserID == "":
+		return ErrStoreInvalidUserID
+	case s.StoreName == "":
+		return ErrStoreInvalidName
+	case utf8.RuneCountInString(s.StoreName) > 255:
+		return ErrStoreNameTooLong
+	case s.Address != nil && s.Address.Validate() != nil:
+		return s.Address.Validate()
+	default:
+		return nil
+	}
+}
+
 // UpdateInfo updates the store's mutable information fields.
 func (s *Store) UpdateInfo(storeName string, contactPhone *string, address *Address, mediaAssets []string) error {
-	if storeName == "" {
-		return ErrStoreInvalidName
-	}
-	if utf8.RuneCountInString(storeName) > 255 {
-		return ErrStoreNameTooLong
-	}
-	if address != nil {
-		if err := address.Validate(); err != nil {
-			return err
-		}
+	oldName, oldAddr := s.StoreName, s.Address
+	s.StoreName = storeName
+	s.Address = address
+	if err := s.validate(); err != nil {
+		s.StoreName, s.Address = oldName, oldAddr
+		return err
 	}
 
-	s.StoreName = storeName
 	s.ContactPhone = contactPhone
-	s.Address = address
 	s.MediaAssets = mediaAssets
 	s.UpdatedAt = time.Now()
 	s.events = append(s.events, event.StoreUpdated{

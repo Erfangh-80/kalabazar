@@ -33,22 +33,6 @@ type Commission struct {
 
 // NewCommission creates a new Commission rule with validation.
 func NewCommission(id, productID, salesModel string, ratePercent float64, minPrice, maxPrice float64, minQty int) (*Commission, error) {
-	if id == "" {
-		return nil, ErrCommissionInvalidID
-	}
-	if productID == "" {
-		return nil, ErrCommissionInvalidProductID
-	}
-	if ratePercent <= 0 || ratePercent > 100 {
-		return nil, ErrCommissionInvalidRate
-	}
-	if minPrice < 0 || maxPrice < 0 || minPrice > maxPrice {
-		return nil, ErrCommissionInvalidPriceRange
-	}
-	if minQty < 0 {
-		return nil, ErrCommissionInvalidMinQty
-	}
-
 	now := time.Now()
 	c := &Commission{
 		ID:          id,
@@ -60,6 +44,9 @@ func NewCommission(id, productID, salesModel string, ratePercent float64, minPri
 		MinQty:      minQty,
 		CreatedAt:   now,
 	}
+	if err := c.validate(); err != nil {
+		return nil, err
+	}
 	c.events = append(c.events, event.CommissionRuleCreated{
 		CommissionID: id,
 		ProductID:    productID,
@@ -67,6 +54,24 @@ func NewCommission(id, productID, salesModel string, ratePercent float64, minPri
 		Timestamp:    now,
 	})
 	return c, nil
+}
+
+// validate checks all invariant business rules for the Commission entity.
+func (c *Commission) validate() error {
+	switch {
+	case c.ID == "":
+		return ErrCommissionInvalidID
+	case c.ProductID == "":
+		return ErrCommissionInvalidProductID
+	case c.RatePercent <= 0 || c.RatePercent > 100:
+		return ErrCommissionInvalidRate
+	case c.MinPrice < 0 || c.MaxPrice < 0 || c.MinPrice > c.MaxPrice:
+		return ErrCommissionInvalidPriceRange
+	case c.MinQty < 0:
+		return ErrCommissionInvalidMinQty
+	default:
+		return nil
+	}
 }
 
 // Calculate computes the commission amount for a given sale.
