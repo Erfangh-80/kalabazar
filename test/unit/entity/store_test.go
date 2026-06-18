@@ -165,8 +165,8 @@ func TestStore_Approval_Approve(t *testing.T) {
 	if len(events) != 1 {
 		t.Fatalf("expected 1 event, got %d", len(events))
 	}
-	if _, ok := events[0].(event.StoreApproved); !ok {
-		t.Fatalf("expected StoreApproved, got %T", events[0])
+	if _, ok := events[0].(event.StoreActivated); !ok {
+		t.Fatalf("expected StoreActivated, got %T", events[0])
 	}
 }
 
