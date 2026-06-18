@@ -95,11 +95,11 @@ internal/domain/
 
 Before starting any task, always read:
 
-AGENT.md
+Agent.md
 
 Then read the scenario for the specific entity:
 
-docs/domain/<entity>/Scenario.md
+docs/domain/<entity>/SCENARIO.md
 
 The Scenario file is the single source of truth.
 
@@ -160,8 +160,8 @@ Think like this:
 
 For every task you receive:
 
-Read AGENT.md
-Read docs/domain/<entity>/Scenario.md
+Read Agent.md
+Read docs/domain/<entity>/SCENARIO.md
 Implement the entity completely inside its package
 Ensure all business logic is inside the entity
 Ensure errors + repository interface are inside same file
