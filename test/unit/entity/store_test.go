@@ -44,8 +44,8 @@ func TestNewStore_Defaults(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
-	if store.Status != entity.StoreStatusActive {
-		t.Errorf("expected active status, got %s", store.Status)
+	if store.Status != entity.StoreStatusPendingReview {
+		t.Errorf("expected pending_review status, got %s", store.Status)
 	}
 	if !store.IsCommissionApplicable {
 		t.Error("expected commission applicable to be true")
@@ -150,10 +150,63 @@ func TestStore_UpdateInfo_InvalidAddress(t *testing.T) {
 	}
 }
 
+func TestStore_Approval_Approve(t *testing.T) {
+	store, _ := entity.NewStore("st-1", "usr-1", "My Store", nil, nil, nil)
+	store.Events() // clear initial event
+
+	err := store.Approve()
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if store.Status != entity.StoreStatusActive {
+		t.Errorf("expected active, got %s", store.Status)
+	}
+	events := store.Events()
+	if len(events) != 1 {
+		t.Fatalf("expected 1 event, got %d", len(events))
+	}
+	if _, ok := events[0].(event.StoreApproved); !ok {
+		t.Fatalf("expected StoreApproved, got %T", events[0])
+	}
+}
+
+func TestStore_Approval_AlreadyApproved(t *testing.T) {
+	store, _ := entity.NewStore("st-1", "usr-1", "My Store", nil, nil, nil)
+	store.Events() // clear initial event
+	store.Approve()
+	store.Events()
+
+	err := store.Approve()
+	if err != entity.ErrStoreAlreadyApproved {
+		t.Errorf("expected ErrStoreAlreadyApproved, got %v", err)
+	}
+}
+
+func TestStore_Approval_Reject(t *testing.T) {
+	store, _ := entity.NewStore("st-1", "usr-1", "My Store", nil, nil, nil)
+	store.Events()
+
+	err := store.Reject()
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if store.Status != entity.StoreStatusRejected {
+		t.Errorf("expected rejected, got %s", store.Status)
+	}
+	events := store.Events()
+	if len(events) != 1 {
+		t.Fatalf("expected 1 event, got %d", len(events))
+	}
+	if _, ok := events[0].(event.StoreRejected); !ok {
+		t.Fatalf("expected StoreRejected, got %T", events[0])
+	}
+}
+
 func TestStore_Activate_Success(t *testing.T) {
 	store, _ := entity.NewStore("st-1", "usr-1", "My Store", nil, nil, nil)
-	store.Status = entity.StoreStatusInactive
-	store.Events() // clear initial event
+	store.Approve()
+	store.Deactivate()
+	store.Events()
 
 	err := store.Activate()
 	if err != nil {
@@ -171,19 +224,20 @@ func TestStore_Activate_Success(t *testing.T) {
 	}
 }
 
-func TestStore_Activate_AlreadyActive(t *testing.T) {
+func TestStore_Activate_FromPendingReview(t *testing.T) {
 	store, _ := entity.NewStore("st-1", "usr-1", "My Store", nil, nil, nil)
-	store.Events() // clear initial event
+	store.Events()
 
 	err := store.Activate()
-	if err != entity.ErrStoreAlreadyActive {
-		t.Errorf("expected ErrStoreAlreadyActive, got %v", err)
+	if err != entity.ErrStoreNotPendingReview {
+		t.Errorf("expected ErrStoreNotPendingReview, got %v", err)
 	}
 }
 
 func TestStore_Deactivate_Success(t *testing.T) {
 	store, _ := entity.NewStore("st-1", "usr-1", "My Store", nil, nil, nil)
-	store.Events() // clear initial event
+	store.Approve()
+	store.Events()
 
 	err := store.Deactivate()
 	if err != nil {
@@ -203,7 +257,7 @@ func TestStore_Deactivate_Success(t *testing.T) {
 
 func TestStore_Deactivate_AlreadyInactive(t *testing.T) {
 	store, _ := entity.NewStore("st-1", "usr-1", "My Store", nil, nil, nil)
-	store.Events()
+	store.Approve()
 	store.Deactivate()
 	store.Events()
 

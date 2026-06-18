@@ -1,10 +1,10 @@
 # End-to-End Test Scenario
 
-> Seller `Saeed` registers the store `ElectronicsShop` and sells the product `X200 Wireless Headphones` at a 20% discount.
+> Seller `Saeed` registers the store `ElectronicsShop`, gets approval from the marketplace, receives permission to sell in a category, creates inventory, joins a promotional campaign, and sells the product `X200 Wireless Headphones` with a 20% discount.
 
 ---
 
-## Step 1: Register a store
+## Step 1: Register a Store
 
 **Input:**
 
@@ -18,12 +18,32 @@
 
 **Output:**
 
-- Record in `stores` with `id=1`, `status=active`
+- Record in `stores` with `id=1`, `status=pending_review`
 - Event `store.created` with `store_id=1`
+- Store is not operational yet
 
 ---
 
-## Step 1.5: Category Permission
+## Step 1.1: Store Approval
+
+**Input:**
+
+```json
+{
+  "store_id": 1,
+  "decision": "approve"
+}
+```
+
+**Output:**
+
+- `stores.status = active`
+- Event `store.activated` with `store_id=1`
+- Store becomes operational
+
+---
+
+## Step 1.2: Category Permission Request
 
 **Input:**
 
@@ -36,13 +56,33 @@
 
 **Output:**
 
-- Record in `store_allowed_categories` with `status=pending`
-- After admin approval: `status=approved`
-- Event `store.category_allowed` with `store_id=1`, `category_id=7`
+- Record in `store_allowed_categories`
+- `status = pending`
+- Event `store.category_requested`
 
 ---
 
-## Step 2: Create warehouse and connect
+## Step 1.3: Category Approval
+
+**Input:**
+
+```json
+{
+  "store_id": 1,
+  "category_id": 7,
+  "decision": "approve"
+}
+```
+
+**Output:**
+
+- `store_allowed_categories.status = approved`
+- Event `store.category_allowed`
+- Store is allowed to sell products in category `7`
+
+---
+
+## Step 2: Create Warehouse and Connect
 
 **Input:**
 
@@ -58,7 +98,9 @@
 - Record in `warehouses` with `id=1`
 - Event `warehouse.created` with `warehouse_id=1`
 
-**Connect to store:**
+### Connect to Store
+
+**Input:**
 
 ```json
 {
@@ -71,13 +113,20 @@
 **Output:**
 
 - Record in `store_warehouse_links`
-- Event `warehouse.linked_to_store` with `relation_type=primary`
+- Event `warehouse.linked_to_store`
+- `relation_type = primary`
 
 ---
 
-## Step 3: Register goods
+## Step 3: Register Goods
 
-**Input:**
+### Validation
+
+- Store status = `active` ✅
+- Category permission status = `approved` ✅
+- Warehouse linked to store ✅
+
+### Input
 
 ```json
 {
@@ -89,21 +138,26 @@
   "instant_qty": 50,
   "condition": "new",
   "min_order_qty": 1,
-  "attributes": { "color": "black", "warranty_months": 18 }
+  "attributes": {
+    "color": "black",
+    "warranty_months": 18
+  }
 }
 ```
 
-**Output:**
+### Output
 
 - Record in `inventory` with `id=1`
-- `final_price = 500000.00` (equal to base_price)
-- `vendor_sale_status = active`, `system_sale_status = active`
-- `promotion_status = pending`, `promotion_id = null`
+- `final_price = 500000.00`
+- `vendor_sale_status = active`
+- `system_sale_status = active`
+- `promotion_status = pending`
+- `promotion_id = null`
 - Event `inventory.item_created` with `inventory_id=1`
 
 ---
 
-## Step 4: Record reference price
+## Step 4: Record Reference Price
 
 **Input:**
 
@@ -122,9 +176,9 @@
 
 ---
 
-## Step 5: Create a campaign and connect to the product
+## Step 5: Create Campaign
 
-**Campaign input:**
+### Campaign Input
 
 ```json
 {
@@ -137,12 +191,18 @@
 }
 ```
 
-**Campaign output:**
+### Campaign Output
 
-- Record in `promotions` with `id=1`, `status=inactive`
-- Event `promotion.campaign_created` with `promotion_id=1`
+- Record in `promotions`
+- `id = 1`
+- `status = inactive`
+- Event `promotion.campaign_created`
 
-**Link campaign to product:**
+---
+
+## Step 5.1: Connect Campaign to Product
+
+**Input:**
 
 ```json
 {
@@ -151,15 +211,15 @@
 }
 ```
 
-**Connection output:**
+**Output:**
 
 - `inventory.promotion_id = 1`
-- `inventory.promotion_linked` event
-- `promotion.campaign_linked_to_product` event
+- Event `inventory.promotion_linked`
+- Event `promotion.campaign_linked_to_product`
 
 ---
 
-## Step 6: Campaign approval
+## Step 6: Campaign Approval
 
 **Input:**
 
@@ -173,31 +233,38 @@
 **Output:**
 
 - `inventory.promotion_status = approved`
-- `inventory.promotion_status_changed` event: `pending → approved`
-- `promotion.campaign_approved` event
+- Event `inventory.promotion_status_changed`
+- Event `promotion.campaign_approved`
 
 ---
 
-## Step 7: Calculate final price
+## Step 7: Calculate Final Price
 
-**Calculate:**
+### Calculation
 
+```text
+final_price = 500,000 - (500,000 × 20 / 100)
+final_price = 400,000
 ```
-final_price = 500,000 - (500,000 × 20 / 100) = 400,000
-```
 
-**Output:**
+### Output
 
 - `inventory.final_price = 400000.00`
-- Event `inventory.price_updated`: `500000 → 400000`
+- Event `inventory.price_updated`
+- Previous price: `500000`
+- New price: `400000`
 
 ---
 
-## Step 8: Automatically activate the campaign
+## Step 8: Automatically Activate Campaign
 
-**Condition:** `NOW() >= start_at (2026-06-20T00:00:00Z)`
+### Condition
 
-**Output:**
+```text
+NOW() >= start_at
+```
+
+### Output
 
 - `promotions.status = active`
 - Event `promotion.campaign_activated`
@@ -206,7 +273,7 @@ final_price = 500,000 - (500,000 × 20 / 100) = 400,000
 
 ## Step 9: Sales
 
-**Sales input:**
+### Sales Input
 
 ```json
 {
@@ -215,23 +282,28 @@ final_price = 500,000 - (500,000 × 20 / 100) = 400,000
 }
 ```
 
-**Validation:**
+### Validation
 
-- `vendor_sale_status = active` ✅
-- `system_sale_status = active` ✅
+- Store status = `active` ✅
+- Category permission status = `approved` ✅
+- Vendor sale status = `active` ✅
+- System sale status = `active` ✅
+- Inventory quantity available ✅
 - `instant_qty (50) >= 1` ✅
 - `min_order_qty (1) <= 1 <= max_order_qty (null)` ✅
 
-**Output:**
+### Output
 
-- `inventory.instant_qty = 49` (decrease by 1 unit)
-- `inventory.stock_updated` event: `50 → 49`
+- `inventory.instant_qty = 49`
+- Event `inventory.stock_updated`
+- Previous quantity: `50`
+- New quantity: `49`
 
 ---
 
-## Step 10: Calculate commission
+## Step 10: Calculate Commission
 
-**Predefined commission rule:**
+### Commission Rule
 
 ```json
 {
@@ -245,31 +317,28 @@ final_price = 500,000 - (500,000 × 20 / 100) = 400,000
 }
 ```
 
-**Calculation:**
+### Validation
 
-```
+```text
 400,000 >= 100,000 ✅
 400,000 <= 1,000,000 ✅
 1 >= 1 ✅
-Commission = 400,000 × 10% = 40,000
 ```
 
-**Output:**
+### Calculation
 
-- Event `commission.calculated`: `commission_amount=40000`
+```text
+Commission = 400,000 × 10%
+Commission = 40,000
+```
 
----
+### Output
 
-## Step 11: End of campaign
-
-**Condition:** `NOW() > end_at (2026-07-05T23:59:59Z)`
-
-**Output:**
-
-- `promotions.status = inactive`
-
-- `inventory.final_price = 500000.00` (return to base_price)
-- Event `promotion.campaign_deactivated`
-- Event `inventory.price_updated`: `400000 → 500000`
+- Event `commission.calculated`
+- `commission_amount = 40000`
 
 ---
+
+## Step 11: End of Campaign
+
+### C

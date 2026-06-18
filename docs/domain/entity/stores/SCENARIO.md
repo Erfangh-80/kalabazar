@@ -1,30 +1,29 @@
 **Description:**
 A new seller wants to start working on Marketplace. He must first register his store in order to list his goods for sale. The store acts as the seller's main entity in the system and all subsequent activities (warehouse, inventory, sales) are connected to it.
+Store creation is not immediately active. Every newly registered store must go through an admin review process before it becomes operational.
+
+🧩 Store Lifecycle States
+active - inactive - rejected
+pending_review: Newly created store waiting for admin approval
+active: Approved and operational store
+inactive: Temporarily disabled store (can be reactivated)
+rejected: Store rejected by admin and not allowed to operate
+
+Scenario 1: Store Registration
+
+Role: Seller
+
+Description:
+
+A seller submits a request to register a store. The store is created but cannot operate until it is approved by an administrator
 
 **Main flow:**
 
-1. Seller requests store registration
-2. System registers store with `active` status
-3. System connects store to seller's user account (`user_id`)
-4. Store is ready for operation
-
-**Required information:**
-
-- Store name (`store_name`)
-- Contact number (`contact_phone`) — optional
-- Address (`address_id`) — optional
-- Media (`media_assets`) — optional
-
-**Default values:**
-
-- Status: `active`
-- Commission application: enabled (`is_commission_applicable = true`)
-- Bulk sale: disabled (`is_bulk_sale_enabled = false`)
-
-**Result:**
-
-- `store.created` event is emitted
-- Store is visible and usable
+Seller requests store registration
+System creates store with status = pending_review
+Store is linked to user_id
+Admin is notified for review
+Store remains non-operational until approval
 
 ---
 

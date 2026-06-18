@@ -9,21 +9,26 @@ import (
 )
 
 var (
-	ErrStoreInvalidName     = errors.New("store name cannot be empty")
-	ErrStoreNameTooLong     = errors.New("store name cannot exceed 255 characters")
-	ErrStoreAlreadyActive   = errors.New("store is already active")
-	ErrStoreAlreadyInactive = errors.New("store is already inactive")
-	ErrStoreInvalidID       = errors.New("store id cannot be empty")
-	ErrStoreInvalidUserID   = errors.New("user id cannot be empty")
-	ErrStoreNotFound        = errors.New("store not found")
+	ErrStoreInvalidName      = errors.New("store name cannot be empty")
+	ErrStoreNameTooLong      = errors.New("store name cannot exceed 255 characters")
+	ErrStoreAlreadyActive    = errors.New("store is already active")
+	ErrStoreAlreadyInactive  = errors.New("store is already inactive")
+	ErrStoreInvalidID        = errors.New("store id cannot be empty")
+	ErrStoreInvalidUserID    = errors.New("user id cannot be empty")
+	ErrStoreNotFound         = errors.New("store not found")
+	ErrStoreAlreadyApproved  = errors.New("store is already approved")
+	ErrStoreAlreadyRejected  = errors.New("store is already rejected")
+	ErrStoreNotPendingReview = errors.New("store is not pending review")
 )
 
 // StoreStatus represents the operational status of a store.
 type StoreStatus string
 
 const (
-	StoreStatusActive   StoreStatus = "active"
-	StoreStatusInactive StoreStatus = "inactive"
+	StoreStatusPendingReview StoreStatus = "pending_review"
+	StoreStatusActive        StoreStatus = "active"
+	StoreStatusInactive      StoreStatus = "inactive"
+	StoreStatusRejected      StoreStatus = "rejected"
 )
 
 // Store represents a seller's store in the marketplace.
@@ -43,7 +48,7 @@ type Store struct {
 	events []any
 }
 
-// NewStore creates a new Store with active status and default values.
+// NewStore creates a new Store with pending_review status and default values.
 func NewStore(id, userID, storeName string, contactPhone *string, address *Address, mediaAssets []string) (*Store, error) {
 	now := time.Now()
 	store := &Store{
@@ -53,7 +58,7 @@ func NewStore(id, userID, storeName string, contactPhone *string, address *Addre
 		ContactPhone:           contactPhone,
 		Address:                address,
 		MediaAssets:            mediaAssets,
-		Status:                 StoreStatusActive,
+		Status:                 StoreStatusPendingReview,
 		IsCommissionApplicable: true,
 		IsBulkSaleEnabled:      false,
 		CreatedAt:              now,
@@ -109,10 +114,51 @@ func (s *Store) UpdateInfo(storeName string, contactPhone *string, address *Addr
 	return nil
 }
 
-// Activate transitions the store to the active status.
+// Approve transitions the store from pending_review to active.
+func (s *Store) Approve() error {
+	switch s.Status {
+	case StoreStatusActive:
+		return ErrStoreAlreadyApproved
+	case StoreStatusRejected:
+		return ErrStoreAlreadyRejected
+	case StoreStatusPendingReview:
+		s.Status = StoreStatusActive
+		s.UpdatedAt = time.Now()
+		s.events = append(s.events, event.StoreApproved{
+			StoreID:   s.ID,
+			Timestamp: s.UpdatedAt,
+		})
+		return nil
+	default:
+		return ErrStoreNotPendingReview
+	}
+}
+
+// Reject transitions the store from pending_review to rejected.
+func (s *Store) Reject() error {
+	switch s.Status {
+	case StoreStatusPendingReview:
+		s.Status = StoreStatusRejected
+		s.UpdatedAt = time.Now()
+		s.events = append(s.events, event.StoreRejected{
+			StoreID:   s.ID,
+			Timestamp: s.UpdatedAt,
+		})
+		return nil
+	case StoreStatusRejected:
+		return ErrStoreAlreadyRejected
+	default:
+		return ErrStoreNotPendingReview
+	}
+}
+
+// Activate transitions the store from inactive to active.
 func (s *Store) Activate() error {
 	if s.Status == StoreStatusActive {
 		return ErrStoreAlreadyActive
+	}
+	if s.Status != StoreStatusInactive {
+		return ErrStoreNotPendingReview
 	}
 	s.Status = StoreStatusActive
 	s.UpdatedAt = time.Now()
@@ -123,10 +169,13 @@ func (s *Store) Activate() error {
 	return nil
 }
 
-// Deactivate transitions the store to the inactive status.
+// Deactivate transitions the store from active to inactive.
 func (s *Store) Deactivate() error {
 	if s.Status == StoreStatusInactive {
 		return ErrStoreAlreadyInactive
+	}
+	if s.Status != StoreStatusActive {
+		return ErrStoreNotPendingReview
 	}
 	s.Status = StoreStatusInactive
 	s.UpdatedAt = time.Now()

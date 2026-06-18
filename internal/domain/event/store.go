@@ -45,3 +45,19 @@ type StoreDeactivated struct {
 }
 
 func (e StoreDeactivated) EventName() string { return "store.deactivated" }
+
+// StoreApproved is emitted when a pending store is approved by admin.
+type StoreApproved struct {
+	StoreID   string
+	Timestamp time.Time
+}
+
+func (e StoreApproved) EventName() string { return "store.approved" }
+
+// StoreRejected is emitted when a pending store is rejected by admin.
+type StoreRejected struct {
+	StoreID   string
+	Timestamp time.Time
+}
+
+func (e StoreRejected) EventName() string { return "store.rejected" }

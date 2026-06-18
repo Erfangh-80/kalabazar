@@ -15,8 +15,25 @@ func TestStep1_RegisterStore(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
+	if store.Status != entity.StoreStatusPendingReview {
+		t.Errorf("expected pending_review status, got %s", store.Status)
+	}
+	store.Events()
+}
+
+func TestStep1dot1_StoreApproval(t *testing.T) {
+	store, err := entity.NewStore("store-1", "user-saeed", "Electronics Shop", nil, nil, nil)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	store.Events()
+
+	err = store.Approve()
+	if err != nil {
+		t.Fatalf("approve failed: %v", err)
+	}
 	if store.Status != entity.StoreStatusActive {
-		t.Errorf("expected active status, got %s", store.Status)
+		t.Errorf("expected active, got %s", store.Status)
 	}
 	store.Events()
 }
@@ -67,9 +84,8 @@ func TestStep2_CreateWarehouseAndLink(t *testing.T) {
 
 func TestStep3_RegisterGoods(t *testing.T) {
 	attrs := map[string]string{"color": "black", "warranty_months": "18"}
-	maxQty := 100
 	inv, err := entity.NewInventory("inv-1", "store-1", "wh-1", "prod-x200", 500000, 50,
-		"retail", "new", 1, &maxQty, attrs)
+		"retail", "new", 1, nil, attrs)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -94,8 +110,8 @@ func TestStep3_RegisterGoods(t *testing.T) {
 	if inv.MinOrderQty != 1 {
 		t.Errorf("expected min_order_qty 1, got %d", inv.MinOrderQty)
 	}
-	if inv.MaxOrderQty == nil || *inv.MaxOrderQty != 100 {
-		t.Errorf("expected max_order_qty 100, got %v", inv.MaxOrderQty)
+	if inv.MaxOrderQty != nil {
+		t.Errorf("expected max_order_qty nil, got %v", inv.MaxOrderQty)
 	}
 	if inv.Attributes["color"] != "black" {
 		t.Errorf("expected color black, got %s", inv.Attributes["color"])

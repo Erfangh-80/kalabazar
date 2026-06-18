@@ -60,6 +60,7 @@ func TestStoreEvents_Updated(t *testing.T) {
 
 func TestStoreEvents_Activated(t *testing.T) {
 	store, _ := entity.NewStore("s-1", "user-42", "Shop", nil, nil, nil)
+	store.Approve()
 	store.Deactivate()
 	store.Events()
 	if err := store.Activate(); err != nil {
@@ -83,6 +84,7 @@ func TestStoreEvents_Activated(t *testing.T) {
 
 func TestStoreEvents_Deactivated(t *testing.T) {
 	store, _ := entity.NewStore("s-1", "user-42", "Shop", nil, nil, nil)
+	store.Approve()
 	store.Events()
 	if err := store.Deactivate(); err != nil {
 		t.Fatal(err)
