@@ -124,7 +124,7 @@ func (s *Store) Approve() error {
 	case StoreStatusPendingReview:
 		s.Status = StoreStatusActive
 		s.UpdatedAt = time.Now()
-		s.events = append(s.events, event.StoreApproved{
+		s.events = append(s.events, event.StoreActivated{
 			StoreID:   s.ID,
 			Timestamp: s.UpdatedAt,
 		})
