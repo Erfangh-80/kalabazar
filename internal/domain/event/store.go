@@ -53,3 +53,14 @@ type StoreRejected struct {
 }
 
 func (e StoreRejected) EventName() string { return "store.rejected" }
+
+// StoreCategoryRejected is emitted when a category access request is rejected by admin.
+type StoreCategoryRejected struct {
+	StoreID     string
+	CategoryID  string
+	Status      string
+	SupportNote string
+	Timestamp   time.Time
+}
+
+func (e StoreCategoryRejected) EventName() string { return "store.category_rejected" }

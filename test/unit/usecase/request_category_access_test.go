@@ -25,6 +25,10 @@ func (m *mockStoreCategoryRepo) FindByStoreIDAndCategoryID(storeID, categoryID s
 	return nil, nil
 }
 
+func (m *mockStoreCategoryRepo) Update(sc *entity.StoreCategory) error {
+	return nil
+}
+
 func TestRequestCategoryAccess_Success(t *testing.T) {
 	repo := &mockStoreCategoryRepo{}
 	uc := usecase.NewRequestCategoryAccessUseCase(repo)

@@ -11,6 +11,8 @@ var (
 	ErrStoreCategoryInvalidStoreID    = errors.New("store id cannot be empty")
 	ErrStoreCategoryInvalidCategoryID = errors.New("category id cannot be empty")
 	ErrStoreCategoryAlreadyApproved   = errors.New("store category is already approved")
+	ErrStoreCategoryAlreadyRejected   = errors.New("store category is already rejected")
+	ErrStoreCategoryAlreadyDecided    = errors.New("store category request has already been decided")
 )
 
 // StoreCategoryStatus represents the approval status of a store category permission.
@@ -19,15 +21,17 @@ type StoreCategoryStatus string
 const (
 	StoreCategoryStatusPending  StoreCategoryStatus = "pending"
 	StoreCategoryStatusApproved StoreCategoryStatus = "approved"
+	StoreCategoryStatusRejected StoreCategoryStatus = "rejected"
 )
 
 // StoreCategory represents a category permission request for a store.
 type StoreCategory struct {
-	StoreID    string
-	CategoryID string
-	Status     StoreCategoryStatus
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
+	StoreID     string
+	CategoryID  string
+	Status      StoreCategoryStatus
+	SupportNote string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 
 	events []any
 }
@@ -71,6 +75,9 @@ func (sc *StoreCategory) Approve() error {
 	if sc.Status == StoreCategoryStatusApproved {
 		return ErrStoreCategoryAlreadyApproved
 	}
+	if sc.Status == StoreCategoryStatusRejected {
+		return ErrStoreCategoryAlreadyDecided
+	}
 	sc.Status = StoreCategoryStatusApproved
 	sc.UpdatedAt = time.Now()
 	sc.events = append(sc.events, event.StoreCategoryAllowed{
@@ -78,6 +85,27 @@ func (sc *StoreCategory) Approve() error {
 		CategoryID: sc.CategoryID,
 		Status:     string(StoreCategoryStatusApproved),
 		Timestamp:  sc.UpdatedAt,
+	})
+	return nil
+}
+
+// Reject transitions the category permission to rejected status.
+func (sc *StoreCategory) Reject(supportNote string) error {
+	if sc.Status == StoreCategoryStatusRejected {
+		return ErrStoreCategoryAlreadyRejected
+	}
+	if sc.Status == StoreCategoryStatusApproved {
+		return ErrStoreCategoryAlreadyDecided
+	}
+	sc.Status = StoreCategoryStatusRejected
+	sc.SupportNote = supportNote
+	sc.UpdatedAt = time.Now()
+	sc.events = append(sc.events, event.StoreCategoryRejected{
+		StoreID:     sc.StoreID,
+		CategoryID:  sc.CategoryID,
+		Status:      string(StoreCategoryStatusRejected),
+		SupportNote: supportNote,
+		Timestamp:   sc.UpdatedAt,
 	})
 	return nil
 }
@@ -93,4 +121,5 @@ func (sc *StoreCategory) Events() []any {
 type StoreCategoryRepository interface {
 	Save(sc *StoreCategory) error
 	FindByStoreIDAndCategoryID(storeID, categoryID string) (*StoreCategory, error)
+	Update(sc *StoreCategory) error
 }
