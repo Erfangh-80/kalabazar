@@ -88,3 +88,9 @@ func (sc *StoreCategory) Events() []any {
 	sc.events = nil
 	return events
 }
+
+// StoreCategoryRepository defines persistence operations for StoreCategory.
+type StoreCategoryRepository interface {
+	Save(sc *StoreCategory) error
+	FindByStoreIDAndCategoryID(storeID, categoryID string) (*StoreCategory, error)
+}
