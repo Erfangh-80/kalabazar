@@ -60,6 +60,10 @@ func (m *mockAttachCampaignPromotionRepo) FindByID(id string) (*entity.Promotion
 	return p, nil
 }
 
+func (m *mockAttachCampaignPromotionRepo) FindSchedulable(now time.Time) ([]*entity.Promotion, error) {
+	return nil, nil
+}
+
 func (m *mockAttachCampaignPromotionRepo) Update(p *entity.Promotion) error {
 	m.items[p.ID] = p
 	return nil

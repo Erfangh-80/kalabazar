@@ -22,6 +22,10 @@ func (m *mockPromotionRepo) FindByID(id string) (*entity.Promotion, error) {
 	return nil, nil
 }
 
+func (m *mockPromotionRepo) FindSchedulable(now time.Time) ([]*entity.Promotion, error) {
+	return nil, nil
+}
+
 func (m *mockPromotionRepo) Update(p *entity.Promotion) error {
 	return nil
 }
