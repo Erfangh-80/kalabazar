@@ -43,6 +43,10 @@ func (m *mockActivateCampaignRepo) FindSchedulable(now time.Time) ([]*entity.Pro
 	return result, nil
 }
 
+func (m *mockActivateCampaignRepo) FindExpired(now time.Time) ([]*entity.Promotion, error) {
+	return nil, nil
+}
+
 func (m *mockActivateCampaignRepo) Update(p *entity.Promotion) error {
 	m.items[p.ID] = p
 	return nil

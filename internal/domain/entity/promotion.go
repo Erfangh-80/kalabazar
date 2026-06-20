@@ -199,5 +199,6 @@ type PromotionRepository interface {
 	Save(promotion *Promotion) error
 	FindByID(id string) (*Promotion, error)
 	FindSchedulable(now time.Time) ([]*Promotion, error)
+	FindExpired(now time.Time) ([]*Promotion, error)
 	Update(promotion *Promotion) error
 }

@@ -38,6 +38,10 @@ func (m *mockAttachCampaignInventoryRepo) FindByProductID(productID string) ([]*
 	return nil, nil
 }
 
+func (m *mockAttachCampaignInventoryRepo) FindByPromotionID(promotionID string) ([]*entity.Inventory, error) {
+	return nil, nil
+}
+
 func (m *mockAttachCampaignInventoryRepo) Update(inv *entity.Inventory) error {
 	m.items[inv.ID] = inv
 	return nil
@@ -61,6 +65,10 @@ func (m *mockAttachCampaignPromotionRepo) FindByID(id string) (*entity.Promotion
 }
 
 func (m *mockAttachCampaignPromotionRepo) FindSchedulable(now time.Time) ([]*entity.Promotion, error) {
+	return nil, nil
+}
+
+func (m *mockAttachCampaignPromotionRepo) FindExpired(now time.Time) ([]*entity.Promotion, error) {
 	return nil, nil
 }
 

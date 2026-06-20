@@ -374,5 +374,6 @@ type InventoryRepository interface {
 	FindByStoreID(storeID string) ([]*Inventory, error)
 	FindByWarehouseID(warehouseID string) ([]*Inventory, error)
 	FindByProductID(productID string) ([]*Inventory, error)
+	FindByPromotionID(promotionID string) ([]*Inventory, error)
 	Update(inventory *Inventory) error
 }

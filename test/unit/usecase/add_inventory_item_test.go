@@ -107,6 +107,10 @@ func (m *mockInventoryItemRepo) FindByProductID(productID string) ([]*entity.Inv
 	return nil, nil
 }
 
+func (m *mockInventoryItemRepo) FindByPromotionID(promotionID string) ([]*entity.Inventory, error) {
+	return nil, nil
+}
+
 func (m *mockInventoryItemRepo) Update(inv *entity.Inventory) error {
 	return nil
 }
