@@ -8,15 +8,15 @@ import (
 )
 
 func TestNewCommission_Success(t *testing.T) {
-	c, err := entity.NewCommission("comm-1", "prod-1", "retail", 10.0, 50000, 500000, 1)
+	c, err := entity.NewCommission("comm-1", "inv-1", "retail", 10.0, 50000, 500000, 1)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 	if c.ID != "comm-1" {
 		t.Errorf("expected comm-1, got %s", c.ID)
 	}
-	if c.ProductID != "prod-1" {
-		t.Errorf("expected prod-1, got %s", c.ProductID)
+	if c.InventoryID != "inv-1" {
+		t.Errorf("expected inv-1, got %s", c.InventoryID)
 	}
 	if c.RatePercent != 10.0 {
 		t.Errorf("expected 10.0, got %f", c.RatePercent)
@@ -33,70 +33,70 @@ func TestNewCommission_Success(t *testing.T) {
 }
 
 func TestNewCommission_InvalidID(t *testing.T) {
-	_, err := entity.NewCommission("", "prod-1", "retail", 10, 0, 100, 1)
+	_, err := entity.NewCommission("", "inv-1", "retail", 10, 0, 100, 1)
 	if err != entity.ErrCommissionInvalidID {
 		t.Errorf("expected ErrCommissionInvalidID, got %v", err)
 	}
 }
 
-func TestNewCommission_InvalidProductID(t *testing.T) {
+func TestNewCommission_InvalidInventoryID(t *testing.T) {
 	_, err := entity.NewCommission("comm-1", "", "retail", 10, 0, 100, 1)
-	if err != entity.ErrCommissionInvalidProductID {
-		t.Errorf("expected ErrCommissionInvalidProductID, got %v", err)
+	if err != entity.ErrCommissionInvalidInventoryID {
+		t.Errorf("expected ErrCommissionInvalidInventoryID, got %v", err)
 	}
 }
 
 func TestNewCommission_ZeroRate(t *testing.T) {
-	_, err := entity.NewCommission("comm-1", "prod-1", "retail", 0, 0, 100, 1)
+	_, err := entity.NewCommission("comm-1", "inv-1", "retail", 0, 0, 100, 1)
 	if err != entity.ErrCommissionInvalidRate {
 		t.Errorf("expected ErrCommissionInvalidRate, got %v", err)
 	}
 }
 
 func TestNewCommission_NegativeRate(t *testing.T) {
-	_, err := entity.NewCommission("comm-1", "prod-1", "retail", -5, 0, 100, 1)
+	_, err := entity.NewCommission("comm-1", "inv-1", "retail", -5, 0, 100, 1)
 	if err != entity.ErrCommissionInvalidRate {
 		t.Errorf("expected ErrCommissionInvalidRate, got %v", err)
 	}
 }
 
 func TestNewCommission_RateOver100(t *testing.T) {
-	_, err := entity.NewCommission("comm-1", "prod-1", "retail", 150, 0, 100, 1)
+	_, err := entity.NewCommission("comm-1", "inv-1", "retail", 150, 0, 100, 1)
 	if err != entity.ErrCommissionInvalidRate {
 		t.Errorf("expected ErrCommissionInvalidRate, got %v", err)
 	}
 }
 
 func TestNewCommission_MinPriceNegative(t *testing.T) {
-	_, err := entity.NewCommission("comm-1", "prod-1", "retail", 10, -100, 100, 1)
+	_, err := entity.NewCommission("comm-1", "inv-1", "retail", 10, -100, 100, 1)
 	if err != entity.ErrCommissionInvalidPriceRange {
 		t.Errorf("expected ErrCommissionInvalidPriceRange, got %v", err)
 	}
 }
 
 func TestNewCommission_MaxPriceNegative(t *testing.T) {
-	_, err := entity.NewCommission("comm-1", "prod-1", "retail", 10, 0, -100, 1)
+	_, err := entity.NewCommission("comm-1", "inv-1", "retail", 10, 0, -100, 1)
 	if err != entity.ErrCommissionInvalidPriceRange {
 		t.Errorf("expected ErrCommissionInvalidPriceRange, got %v", err)
 	}
 }
 
 func TestNewCommission_MinAboveMax(t *testing.T) {
-	_, err := entity.NewCommission("comm-1", "prod-1", "retail", 10, 500, 100, 1)
+	_, err := entity.NewCommission("comm-1", "inv-1", "retail", 10, 500, 100, 1)
 	if err != entity.ErrCommissionInvalidPriceRange {
 		t.Errorf("expected ErrCommissionInvalidPriceRange, got %v", err)
 	}
 }
 
 func TestNewCommission_InvalidMinQty(t *testing.T) {
-	_, err := entity.NewCommission("comm-1", "prod-1", "retail", 10, 0, 100, -1)
+	_, err := entity.NewCommission("comm-1", "inv-1", "retail", 10, 0, 100, -1)
 	if err != entity.ErrCommissionInvalidMinQty {
 		t.Errorf("expected ErrCommissionInvalidMinQty, got %v", err)
 	}
 }
 
 func TestNewCommission_EventEmitted(t *testing.T) {
-	c, err := entity.NewCommission("comm-1", "prod-1", "retail", 10, 0, 100, 1)
+	c, err := entity.NewCommission("comm-1", "inv-1", "retail", 10, 0, 100, 1)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -114,7 +114,7 @@ func TestNewCommission_EventEmitted(t *testing.T) {
 }
 
 func TestCommission_Calculate_Success(t *testing.T) {
-	c, _ := entity.NewCommission("comm-1", "prod-1", "retail", 10, 50000, 500000, 1)
+	c, _ := entity.NewCommission("comm-1", "inv-1", "retail", 10, 50000, 500000, 1)
 	amount, err := c.Calculate(200000, 3)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
@@ -125,7 +125,7 @@ func TestCommission_Calculate_Success(t *testing.T) {
 }
 
 func TestCommission_Calculate_PriceBelowMin(t *testing.T) {
-	c, _ := entity.NewCommission("comm-1", "prod-1", "retail", 10, 50000, 500000, 1)
+	c, _ := entity.NewCommission("comm-1", "inv-1", "retail", 10, 50000, 500000, 1)
 	_, err := c.Calculate(10000, 1)
 	if err != entity.ErrCommissionConditionsNotMet {
 		t.Errorf("expected ErrCommissionConditionsNotMet, got %v", err)
@@ -133,7 +133,7 @@ func TestCommission_Calculate_PriceBelowMin(t *testing.T) {
 }
 
 func TestCommission_Calculate_PriceAboveMax(t *testing.T) {
-	c, _ := entity.NewCommission("comm-1", "prod-1", "retail", 10, 50000, 500000, 1)
+	c, _ := entity.NewCommission("comm-1", "inv-1", "retail", 10, 50000, 500000, 1)
 	_, err := c.Calculate(600000, 1)
 	if err != entity.ErrCommissionConditionsNotMet {
 		t.Errorf("expected ErrCommissionConditionsNotMet, got %v", err)
@@ -141,7 +141,7 @@ func TestCommission_Calculate_PriceAboveMax(t *testing.T) {
 }
 
 func TestCommission_Calculate_QtyBelowMin(t *testing.T) {
-	c, _ := entity.NewCommission("comm-1", "prod-1", "retail", 10, 50000, 500000, 3)
+	c, _ := entity.NewCommission("comm-1", "inv-1", "retail", 10, 50000, 500000, 3)
 	_, err := c.Calculate(200000, 1)
 	if err != entity.ErrCommissionConditionsNotMet {
 		t.Errorf("expected ErrCommissionConditionsNotMet, got %v", err)
@@ -149,7 +149,7 @@ func TestCommission_Calculate_QtyBelowMin(t *testing.T) {
 }
 
 func TestCommission_Calculate_PriceAtMinBoundary(t *testing.T) {
-	c, _ := entity.NewCommission("comm-1", "prod-1", "retail", 10, 50000, 500000, 1)
+	c, _ := entity.NewCommission("comm-1", "inv-1", "retail", 10, 50000, 500000, 1)
 	amount, err := c.Calculate(50000, 1)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
@@ -160,7 +160,7 @@ func TestCommission_Calculate_PriceAtMinBoundary(t *testing.T) {
 }
 
 func TestCommission_Calculate_PriceAtMaxBoundary(t *testing.T) {
-	c, _ := entity.NewCommission("comm-1", "prod-1", "retail", 10, 50000, 500000, 1)
+	c, _ := entity.NewCommission("comm-1", "inv-1", "retail", 10, 50000, 500000, 1)
 	amount, err := c.Calculate(500000, 1)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
@@ -171,7 +171,7 @@ func TestCommission_Calculate_PriceAtMaxBoundary(t *testing.T) {
 }
 
 func TestCommission_Calculate_QtyAtMinBoundary(t *testing.T) {
-	c, _ := entity.NewCommission("comm-1", "prod-1", "retail", 10, 0, 1000, 5)
+	c, _ := entity.NewCommission("comm-1", "inv-1", "retail", 10, 0, 1000, 5)
 	amount, err := c.Calculate(100, 5)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
@@ -182,7 +182,7 @@ func TestCommission_Calculate_QtyAtMinBoundary(t *testing.T) {
 }
 
 func TestCommission_Events_ClearedAfterCall(t *testing.T) {
-	c, _ := entity.NewCommission("comm-1", "prod-1", "retail", 10, 0, 100, 1)
+	c, _ := entity.NewCommission("comm-1", "inv-1", "retail", 10, 0, 100, 1)
 	events1 := c.Events()
 	if len(events1) != 1 {
 		t.Fatalf("expected 1 event, got %d", len(events1))

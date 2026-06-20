@@ -335,7 +335,7 @@ func TestStep9_Sales_Event(t *testing.T) {
 }
 
 func TestStep10_CalculateCommission_Event(t *testing.T) {
-	comm, _ := entity.NewCommission("comm-1", "prod-x200", "retail", 10, 100000, 1000000, 1)
+	comm, _ := entity.NewCommission("comm-1", "inv-x200", "retail", 10, 100000, 1000000, 1)
 	events := comm.Events()
 	if len(events) != 1 {
 		t.Fatalf("expected 1 event, got %d", len(events))
@@ -350,8 +350,8 @@ func TestStep10_CalculateCommission_Event(t *testing.T) {
 	if rce.RatePercent != 10 {
 		t.Errorf("expected RatePercent 10, got %f", rce.RatePercent)
 	}
-	if rce.EventName() != "commission.rule.created" {
-		t.Errorf("expected commission.rule.created, got %s", rce.EventName())
+	if rce.EventName() != "commission.rule_defined" {
+		t.Errorf("expected commission.rule_defined, got %s", rce.EventName())
 	}
 
 	comm.Calculate(400000, 1)

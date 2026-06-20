@@ -267,7 +267,7 @@ func TestStep9_Sales(t *testing.T) {
 }
 
 func TestStep10_CalculateCommission(t *testing.T) {
-	comm, err := entity.NewCommission("comm-1", "prod-x200", "retail", 10, 100000, 1000000, 1)
+	comm, err := entity.NewCommission("comm-1", "inv-x200", "retail", 10, 100000, 1000000, 1)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}

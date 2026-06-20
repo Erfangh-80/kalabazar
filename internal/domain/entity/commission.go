@@ -8,19 +8,19 @@ import (
 )
 
 var (
-	ErrCommissionInvalidID          = errors.New("commission id cannot be empty")
-	ErrCommissionInvalidProductID   = errors.New("product id cannot be empty")
-	ErrCommissionInvalidRate        = errors.New("commission rate must be between 0 and 100")
-	ErrCommissionInvalidPriceRange  = errors.New("price range is invalid")
-	ErrCommissionInvalidMinQty      = errors.New("minimum quantity cannot be negative")
-	ErrCommissionConditionsNotMet   = errors.New("commission conditions not met")
-	ErrCommissionNotFound           = errors.New("commission rule not found")
+	ErrCommissionInvalidID            = errors.New("commission id cannot be empty")
+	ErrCommissionInvalidInventoryID   = errors.New("inventory id cannot be empty")
+	ErrCommissionInvalidRate          = errors.New("commission rate must be between 0 and 100")
+	ErrCommissionInvalidPriceRange    = errors.New("price range is invalid")
+	ErrCommissionInvalidMinQty        = errors.New("minimum quantity cannot be negative")
+	ErrCommissionConditionsNotMet     = errors.New("commission conditions not met")
+	ErrCommissionNotFound             = errors.New("commission rule not found")
 )
 
-// Commission represents a commission rule defined for a product or category.
+// Commission represents a commission rule defined for an inventory item.
 type Commission struct {
 	ID          string
-	ProductID   string
+	InventoryID string
 	SalesModel  string
 	RatePercent float64
 	MinPrice    float64
@@ -32,11 +32,11 @@ type Commission struct {
 }
 
 // NewCommission creates a new Commission rule with validation.
-func NewCommission(id, productID, salesModel string, ratePercent float64, minPrice, maxPrice float64, minQty int) (*Commission, error) {
+func NewCommission(id, inventoryID, salesModel string, ratePercent float64, minPrice, maxPrice float64, minQty int) (*Commission, error) {
 	now := time.Now()
 	c := &Commission{
 		ID:          id,
-		ProductID:   productID,
+		InventoryID: inventoryID,
 		SalesModel:  salesModel,
 		RatePercent: ratePercent,
 		MinPrice:    minPrice,
@@ -49,7 +49,7 @@ func NewCommission(id, productID, salesModel string, ratePercent float64, minPri
 	}
 	c.events = append(c.events, event.CommissionRuleCreated{
 		CommissionID: id,
-		ProductID:    productID,
+		InventoryID:  inventoryID,
 		RatePercent:  ratePercent,
 		Timestamp:    now,
 	})
@@ -61,8 +61,8 @@ func (c *Commission) validate() error {
 	switch {
 	case c.ID == "":
 		return ErrCommissionInvalidID
-	case c.ProductID == "":
-		return ErrCommissionInvalidProductID
+	case c.InventoryID == "":
+		return ErrCommissionInvalidInventoryID
 	case c.RatePercent <= 0 || c.RatePercent > 100:
 		return ErrCommissionInvalidRate
 	case c.MinPrice < 0 || c.MaxPrice < 0 || c.MinPrice > c.MaxPrice:
@@ -104,5 +104,5 @@ func (c *Commission) Events() []any {
 type CommissionRepository interface {
 	Save(commission *Commission) error
 	FindByID(id string) (*Commission, error)
-	FindByProductID(productID string) (*Commission, error)
+	FindByInventoryID(inventoryID string) (*Commission, error)
 }

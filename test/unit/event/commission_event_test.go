@@ -8,7 +8,7 @@ import (
 )
 
 func TestCommissionEvents_RuleCreated(t *testing.T) {
-	c, _ := entity.NewCommission("comm-1", "prod-1", "retail", 10, 100000, 1000000, 1)
+	c, _ := entity.NewCommission("comm-1", "inv-1", "retail", 10, 100000, 1000000, 1)
 	events := c.Events()
 	if len(events) != 1 {
 		t.Fatalf("expected 1 event, got %d", len(events))
@@ -20,8 +20,8 @@ func TestCommissionEvents_RuleCreated(t *testing.T) {
 	if e.CommissionID != "comm-1" {
 		t.Errorf("expected CommissionID comm-1, got %s", e.CommissionID)
 	}
-	if e.ProductID != "prod-1" {
-		t.Errorf("expected ProductID prod-1, got %s", e.ProductID)
+	if e.InventoryID != "inv-1" {
+		t.Errorf("expected InventoryID inv-1, got %s", e.InventoryID)
 	}
 	if e.RatePercent != 10 {
 		t.Errorf("expected RatePercent 10, got %f", e.RatePercent)
@@ -29,13 +29,13 @@ func TestCommissionEvents_RuleCreated(t *testing.T) {
 	if e.Timestamp.IsZero() {
 		t.Error("expected non-zero Timestamp")
 	}
-	if e.EventName() != "commission.rule.created" {
-		t.Errorf("expected commission.rule.created, got %s", e.EventName())
+	if e.EventName() != "commission.rule_defined" {
+		t.Errorf("expected commission.rule_defined, got %s", e.EventName())
 	}
 }
 
 func TestCommissionEvents_Calculated(t *testing.T) {
-	c, _ := entity.NewCommission("comm-1", "prod-1", "retail", 10, 100000, 1000000, 1)
+	c, _ := entity.NewCommission("comm-1", "inv-1", "retail", 10, 100000, 1000000, 1)
 	c.Events()
 	amount, _ := c.Calculate(400000, 1)
 	events := c.Events()
@@ -64,7 +64,7 @@ func TestCommissionEvents_Calculated(t *testing.T) {
 }
 
 func TestCommissionEvents_ClearedAfterEventsCall(t *testing.T) {
-	c, _ := entity.NewCommission("comm-1", "prod-1", "retail", 10, 100000, 1000000, 1)
+	c, _ := entity.NewCommission("comm-1", "inv-1", "retail", 10, 100000, 1000000, 1)
 	c.Events()
 	remaining := c.Events()
 	if len(remaining) != 0 {
